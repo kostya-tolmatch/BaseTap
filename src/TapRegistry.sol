@@ -6,6 +6,7 @@ import {ITapRegistry} from "./interfaces/ITapRegistry.sol";
 contract TapRegistry is ITapRegistry {
     mapping(uint256 => TapPreset) private _taps;
     mapping(uint256 => address) public tapOwners;
+    mapping(uint256 => uint256) private _lastExecution;
     uint256 private _tapCounter;
 
     function createTap(
@@ -41,6 +42,15 @@ contract TapRegistry is ITapRegistry {
     function executeTap(uint256 tapId) external {
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
+
+        if (tap.cooldown > 0) {
+            require(
+                block.timestamp >= _lastExecution[tapId] + tap.cooldown,
+                "Cooldown period active"
+            );
+        }
+
+        _lastExecution[tapId] = block.timestamp;
 
         emit TapExecuted(tapId, msg.sender, tap.amount);
 
