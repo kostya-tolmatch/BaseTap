@@ -7,6 +7,8 @@ contract TapRegistry is ITapRegistry {
     mapping(uint256 => TapPreset) private _taps;
     mapping(uint256 => address) public tapOwners;
     mapping(uint256 => uint256) private _lastExecution;
+    mapping(uint256 => uint256) private _dailyExecutions;
+    mapping(uint256 => uint256) private _lastDayReset;
     uint256 private _tapCounter;
 
     function createTap(
@@ -51,6 +53,16 @@ contract TapRegistry is ITapRegistry {
         }
 
         _lastExecution[tapId] = block.timestamp;
+
+        if (tap.dailyLimit > 0) {
+            if (block.timestamp >= _lastDayReset[tapId] + 1 days) {
+                _dailyExecutions[tapId] = 0;
+                _lastDayReset[tapId] = block.timestamp;
+            }
+
+            require(_dailyExecutions[tapId] < tap.dailyLimit, "Daily limit reached");
+            _dailyExecutions[tapId]++;
+        }
 
         emit TapExecuted(tapId, msg.sender, tap.amount);
 
