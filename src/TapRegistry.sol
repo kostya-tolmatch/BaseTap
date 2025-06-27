@@ -1,15 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ITapRegistry} from "./interfaces/ITapRegistry.sol";
 
-contract TapRegistry is ITapRegistry {
+contract TapRegistry is
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    ITapRegistry
+{
     mapping(uint256 => TapPreset) private _taps;
     mapping(uint256 => address) public tapOwners;
     mapping(uint256 => uint256) private _lastExecution;
     mapping(uint256 => uint256) private _dailyExecutions;
     mapping(uint256 => uint256) private _lastDayReset;
     uint256 private _tapCounter;
+
+    function initialize(address initialOwner) external initializer {
+        __Ownable_init(initialOwner);
+        __UUPSUpgradeable_init();
+    }
 
     function createTap(
         address recipient,
@@ -75,4 +88,6 @@ contract TapRegistry is ITapRegistry {
     function getTap(uint256 tapId) external view returns (TapPreset memory) {
         return _taps[tapId];
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
