@@ -4,12 +4,14 @@ pragma solidity 0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {ITapRegistry} from "./interfaces/ITapRegistry.sol";
 
 contract TapRegistry is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
     ITapRegistry
 {
     mapping(uint256 => TapPreset) private _taps;
@@ -22,6 +24,7 @@ contract TapRegistry is
     function initialize(address initialOwner) external initializer {
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
     }
 
     function createTap(
@@ -54,7 +57,7 @@ contract TapRegistry is
         return tapId;
     }
 
-    function executeTap(uint256 tapId) external {
+    function executeTap(uint256 tapId) external nonReentrant {
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
 
