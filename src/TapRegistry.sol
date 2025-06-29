@@ -100,3 +100,26 @@ contract TapRegistry is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
+
+    function updateTap(uint256 tapId, uint256 newAmount, uint256 newCooldown) external {
+        require(tapOwners[tapId] == msg.sender, "Not tap owner");
+        require(_taps[tapId].active, "Tap not active");
+
+        if (newAmount > 0) {
+            _taps[tapId].amount = newAmount;
+        }
+
+        _taps[tapId].cooldown = newCooldown;
+
+        emit TapUpdated(tapId);
+    }
+
+    function deactivateTap(uint256 tapId) external {
+        require(tapOwners[tapId] == msg.sender, "Not tap owner");
+        require(_taps[tapId].active, "Already deactivated");
+
+        _taps[tapId].active = false;
+
+        emit TapDeactivated(tapId);
+    
+}
