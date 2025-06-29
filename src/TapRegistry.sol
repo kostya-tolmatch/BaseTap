@@ -5,6 +5,8 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ITapRegistry} from "./interfaces/ITapRegistry.sol";
 
 contract TapRegistry is
@@ -14,6 +16,8 @@ contract TapRegistry is
     ReentrancyGuardUpgradeable,
     ITapRegistry
 {
+    using SafeERC20 for IERC20;
+
     mapping(uint256 => TapPreset) private _taps;
     mapping(uint256 => address) public tapOwners;
     mapping(uint256 => uint256) private _lastExecution;
@@ -79,6 +83,8 @@ contract TapRegistry is
             require(_dailyExecutions[tapId] < tap.dailyLimit, "Daily limit reached");
             _dailyExecutions[tapId]++;
         }
+
+        IERC20(tap.asset).safeTransferFrom(msg.sender, tap.recipient, tap.amount);
 
         emit TapExecuted(tapId, msg.sender, tap.amount);
 
