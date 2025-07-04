@@ -107,3 +107,24 @@ contract CooldownTest is TapRegistryTest {
         registry.executeTap(tapId);
     }
 }
+
+
+contract DailyLimitTest is TapRegistryTest {
+    function testDailyLimitEnforced() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 10e18, 0, 2, false);
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+
+        vm.expectRevert("Daily limit reached");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(user);
+        registry.executeTap(tapId);
+    }
+}
