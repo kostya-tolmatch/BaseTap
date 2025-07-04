@@ -87,3 +87,23 @@ contract TapRegistryTest is Test {
         assertEq(token.balanceOf(recipient), balanceBefore + 100e18);
     }
 }
+
+
+contract CooldownTest is TapRegistryTest {
+    function testCooldownEnforced() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 10e18, 1 hours, 0, false);
+
+        vm.prank(user);
+        registry.executeTap(tapId);
+
+        vm.expectRevert("Cooldown period active");
+        vm.prank(user);
+        registry.executeTap(tapId);
+
+        vm.warp(block.timestamp + 1 hours);
+
+        vm.prank(user);
+        registry.executeTap(tapId);
+    }
+}
