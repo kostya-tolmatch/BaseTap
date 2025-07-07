@@ -128,3 +128,18 @@ contract DailyLimitTest is TapRegistryTest {
         registry.executeTap(tapId);
     }
 }
+
+
+contract SingleUseTest is TapRegistryTest {
+    function testSingleUseTapDeactivates() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 100e18, 0, 0, true);
+
+        vm.prank(user);
+        registry.executeTap(tapId);
+
+        vm.expectRevert("Tap not active");
+        vm.prank(user);
+        registry.executeTap(tapId);
+    }
+}
