@@ -143,3 +143,29 @@ contract SingleUseTest is TapRegistryTest {
         registry.executeTap(tapId);
     }
 }
+
+
+contract UpdateDeactivateTest is TapRegistryTest {
+    function testUpdateTap() public {
+        vm.startPrank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 100e18, 0, 0, false);
+
+        registry.updateTap(tapId, 200e18, 1 hours);
+
+        ITapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.amount, 200e18);
+        assertEq(tap.cooldown, 1 hours);
+        vm.stopPrank();
+    }
+
+    function testDeactivateTap() public {
+        vm.startPrank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 100e18, 0, 0, false);
+
+        registry.deactivateTap(tapId);
+
+        vm.expectRevert("Tap not active");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+    }
+}
