@@ -7,3 +7,5 @@ solc_version = "0.8.23"
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+optimizer = true
+optimizer_runs = 800
