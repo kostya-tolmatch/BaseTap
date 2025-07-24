@@ -24,3 +24,6 @@ forge test
 ## Architecture
 - TapRegistry: Upgradeable payment registry
 - TapExecutor: Batch execution engine
+## Security
+- Reentrancy protection
+- UUPS upgradeable pattern
