@@ -27,3 +27,5 @@ forge test
 ## Security
 - Reentrancy protection
 - UUPS upgradeable pattern
+## Usage
+See deployment scripts for examples
