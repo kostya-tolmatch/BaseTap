@@ -9,3 +9,5 @@ base = "${BASE_RPC_URL}"
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 optimizer = true
 optimizer_runs = 800
+[fuzz]
+runs = 256
