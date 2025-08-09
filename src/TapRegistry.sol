@@ -124,3 +124,4 @@ contract TapRegistry is
         emit TapDeactivated(tapId);
     
 }
+uint256[44] private __gap;
