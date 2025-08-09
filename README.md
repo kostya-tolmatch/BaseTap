@@ -29,3 +29,5 @@ forge test
 - UUPS upgradeable pattern
 ## Usage
 See deployment scripts for examples
+# Contributing
+PRs welcome!
