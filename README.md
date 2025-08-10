@@ -32,3 +32,5 @@ See deployment scripts for examples
 # Contributing
 PRs welcome!
 ## Deployment Addresses
+## Testing
+`forge test`
