@@ -1,3 +1,4 @@
+# BaseTap - Payment System for Base
 # BaseTap
 
 One-click payment button system for Base network.
