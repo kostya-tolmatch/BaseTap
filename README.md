@@ -35,3 +35,17 @@ PRs welcome!
 ## Deployment Addresses
 ## Testing
 `forge test`
+
+## Factory Deployment
+
+Use TapFactory for one-transaction deployment:
+
+```solidity
+TapFactory factory = new TapFactory();
+
+// Deploy registry
+address registryProxy = factory.deployRegistry(owner);
+
+// Deploy executor
+address executorProxy = factory.deployExecutor(owner, registryProxy);
+```
