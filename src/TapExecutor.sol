@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+/// @title TapExecutor
+/// @notice Batch execution engine for multiple taps
+/// @dev Executes multiple taps in a single transaction
 pragma solidity 0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
