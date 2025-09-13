@@ -168,3 +168,28 @@ uint256[44] private __gap;
 
         return tapId;
     }
+
+    function batchCreateTaps(
+        address[] calldata recipients,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        uint256[] calldata cooldowns
+    ) external returns (uint256[] memory tapIds) {
+        require(recipients.length == assets.length, "Length mismatch");
+        require(assets.length == amounts.length, "Length mismatch");
+        require(amounts.length == cooldowns.length, "Length mismatch");
+
+        tapIds = new uint256[](recipients.length);
+
+        for (uint256 i; i < recipients.length; ) {
+            tapIds[i] = this.createTap(
+                recipients[i],
+                assets[i],
+                amounts[i],
+                cooldowns[i],
+                0,
+                false
+            );
+            unchecked { ++i; }
+        }
+    }
