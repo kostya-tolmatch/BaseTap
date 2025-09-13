@@ -85,7 +85,17 @@ contract TapRegistry is
             _dailyExecutions[tapId]++;
         }
 
+        if (tap.asset == address(0)) {
+            require(msg.value >= tap.amount, "Insufficient ETH");
+            (bool success, ) = tap.recipient.call{value: tap.amount}("");
+            require(success, "ETH transfer failed");
+            if (msg.value > tap.amount) {
+                (success, ) = msg.sender.call{value: msg.value - tap.amount}("");
+                require(success, "Refund failed");
+            }
+        } else {
         IERC20(tap.asset).safeTransferFrom(msg.sender, tap.recipient, tap.amount);
+        }
 
         emit TapExecuted(tapId, msg.sender, tap.amount);
 
@@ -125,3 +135,36 @@ contract TapRegistry is
     
 }
 uint256[44] private __gap;
+
+    receive() external payable {}
+
+    function createTapETH(
+        address recipient,
+        uint256 amount,
+        uint256 cooldown,
+        uint256 dailyLimit,
+        bool singleUse
+    ) external returns (uint256) {
+        require(recipient != address(0), "Invalid recipient");
+        require(amount > 0, "Invalid amount");
+
+        uint256 tapId;
+        unchecked {
+            tapId = ++_tapCounter;
+        }
+
+        _taps[tapId] = TapPreset({
+            recipient: recipient,
+            asset: address(0),
+            amount: amount,
+            cooldown: cooldown,
+            dailyLimit: dailyLimit,
+            singleUse: singleUse,
+            active: true
+        });
+
+        tapOwners[tapId] = msg.sender;
+        emit TapCreated(tapId, msg.sender, recipient);
+
+        return tapId;
+    }
