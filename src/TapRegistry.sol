@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,6 +16,7 @@ contract TapRegistry is
     UUPSUpgradeable,
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
     ITapRegistry
 {
     using SafeERC20 for IERC20;
@@ -30,6 +32,7 @@ contract TapRegistry is
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
+        __Pausable_init();
     }
 
     function createTap(
@@ -62,7 +65,7 @@ contract TapRegistry is
         return tapId;
     }
 
-    function executeTap(uint256 tapId) external nonReentrant {
+    function executeTap(uint256 tapId) external nonReentrant whenNotPaused {
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
 
@@ -192,4 +195,12 @@ uint256[44] private __gap;
             );
             unchecked { ++i; }
         }
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
