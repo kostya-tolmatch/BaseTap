@@ -204,3 +204,20 @@ uint256[44] private __gap;
     function unpause() external onlyOwner {
         _unpause();
     }
+
+    uint256 public protocolFeePercent;
+    address public feeCollector;
+
+    event FeeCollected(uint256 indexed tapId, uint256 amount);
+    event FeeUpdated(uint256 newFeePercent);
+
+    function setProtocolFee(uint256 feePercent) external onlyOwner {
+        require(feePercent <= 1000, "Fee too high"); // Max 10%
+        protocolFeePercent = feePercent;
+        emit FeeUpdated(feePercent);
+    }
+
+    function setFeeCollector(address collector) external onlyOwner {
+        require(collector != address(0), "Invalid collector");
+        feeCollector = collector;
+    }
