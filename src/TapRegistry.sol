@@ -283,3 +283,23 @@ uint256[44] private __gap;
 
         return true;
     }
+
+    mapping(uint256 => string) private _tapLabels;
+    mapping(uint256 => string) private _tapDescriptions;
+
+    function setTapMetadata(
+        uint256 tapId,
+        string calldata label,
+        string calldata description
+    ) external {
+        require(tapOwners[tapId] == msg.sender, "Not owner");
+        _tapLabels[tapId] = label;
+        _tapDescriptions[tapId] = description;
+    }
+
+    function getTapMetadata(uint256 tapId) external view returns (
+        string memory label,
+        string memory description
+    ) {
+        return (_tapLabels[tapId], _tapDescriptions[tapId]);
+    }

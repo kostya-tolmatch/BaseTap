@@ -10,6 +10,8 @@ interface ITapRegistry {
         uint256 dailyLimit;
         bool singleUse;
         bool active;
+        string label;
+        string description;
     }
 
     event TapCreated(uint256 indexed tapId, address indexed owner, address recipient);
