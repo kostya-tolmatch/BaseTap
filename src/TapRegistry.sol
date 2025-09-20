@@ -303,3 +303,16 @@ uint256[44] private __gap;
     ) {
         return (_tapLabels[tapId], _tapDescriptions[tapId]);
     }
+
+    event TapOwnershipTransferred(uint256 indexed tapId, address indexed from, address indexed to);
+
+    function transferTapOwnership(uint256 tapId, address newOwner) external {
+        require(tapOwners[tapId] == msg.sender, "Not owner");
+        require(newOwner != address(0), "Invalid new owner");
+        require(_taps[tapId].active, "Tap not active");
+
+        address oldOwner = tapOwners[tapId];
+        tapOwners[tapId] = newOwner;
+
+        emit TapOwnershipTransferred(tapId, oldOwner, newOwner);
+    }
