@@ -221,3 +221,65 @@ uint256[44] private __gap;
         require(collector != address(0), "Invalid collector");
         feeCollector = collector;
     }
+
+    function getUserTaps(address user) external view returns (uint256[] memory) {
+        uint256 count;
+        for (uint256 i = 1; i <= _tapCounter; ) {
+            if (tapOwners[i] == user) count++;
+            unchecked { ++i; }
+        }
+
+        uint256[] memory userTapIds = new uint256[](count);
+        uint256 index;
+        for (uint256 i = 1; i <= _tapCounter; ) {
+            if (tapOwners[i] == user) {
+                userTapIds[index] = i;
+                unchecked { ++index; }
+            }
+            unchecked { ++i; }
+        }
+
+        return userTapIds;
+    }
+
+    function getActiveTaps(address user) external view returns (uint256[] memory) {
+        uint256 count;
+        for (uint256 i = 1; i <= _tapCounter; ) {
+            if (tapOwners[i] == user && _taps[i].active) count++;
+            unchecked { ++i; }
+        }
+
+        uint256[] memory activeTapIds = new uint256[](count);
+        uint256 index;
+        for (uint256 i = 1; i <= _tapCounter; ) {
+            if (tapOwners[i] == user && _taps[i].active) {
+                activeTapIds[index] = i;
+                unchecked { ++index; }
+            }
+            unchecked { ++i; }
+        }
+
+        return activeTapIds;
+    }
+
+    function canExecute(uint256 tapId) external view returns (bool) {
+        TapPreset storage tap = _taps[tapId];
+        if (!tap.active) return false;
+        if (paused()) return false;
+        
+        if (tap.cooldown > 0) {
+            if (block.timestamp < _lastExecution[tapId] + tap.cooldown) {
+                return false;
+            }
+        }
+
+        if (tap.dailyLimit > 0) {
+            if (block.timestamp < _lastDayReset[tapId] + 1 days) {
+                if (_dailyExecutions[tapId] >= tap.dailyLimit) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
