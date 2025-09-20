@@ -101,6 +101,11 @@ contract TapRegistry is
         }
 
         emit TapExecuted(tapId, msg.sender, tap.amount);
+        _executionHistory[tapId].push(ExecutionHistory({
+            timestamp: block.timestamp,
+            amount: tap.amount,
+            executor: msg.sender
+        }));
 
         if (tap.singleUse) {
             tap.active = false;
@@ -315,4 +320,20 @@ uint256[44] private __gap;
         tapOwners[tapId] = newOwner;
 
         emit TapOwnershipTransferred(tapId, oldOwner, newOwner);
+    }
+
+    struct ExecutionHistory {
+        uint256 timestamp;
+        uint256 amount;
+        address executor;
+    }
+
+    mapping(uint256 => ExecutionHistory[]) private _executionHistory;
+
+    function getExecutionHistory(uint256 tapId) external view returns (ExecutionHistory[] memory) {
+        return _executionHistory[tapId];
+    }
+
+    function getExecutionCount(uint256 tapId) external view returns (uint256) {
+        return _executionHistory[tapId].length;
     }
