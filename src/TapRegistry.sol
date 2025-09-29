@@ -337,3 +337,23 @@ uint256[44] private __gap;
     function getExecutionCount(uint256 tapId) external view returns (uint256) {
         return _executionHistory[tapId].length;
     }
+
+    event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
+
+    function emergencyWithdrawToken(
+        address token,
+        uint256 amount,
+        address to
+    ) external onlyOwner {
+        require(paused(), "Must be paused");
+        require(to != address(0), "Invalid recipient");
+
+        if (token == address(0)) {
+            (bool success, ) = to.call{value: amount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+
+        emit EmergencyWithdraw(token, amount, to);
+    }
