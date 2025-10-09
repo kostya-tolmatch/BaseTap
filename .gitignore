@@ -6,3 +6,10 @@ lib/
 broadcast/
 *.swp
 .DS_Store
+
+# Keep deployment addresses
+!deployments/
+!deployments/*.json
+
+# Ignore broadcast details except deployment receipts
+broadcast/**/dry-run/
