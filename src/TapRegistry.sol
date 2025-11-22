@@ -118,7 +118,6 @@ contract TapRegistry is
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-}
 
     function updateTap(uint256 tapId, uint256 newAmount, uint256 newCooldown) external {
         require(tapOwners[tapId] == msg.sender, "Not tap owner");
