@@ -81,6 +81,8 @@ jobs:
             --etherscan-api-key $BASESCAN_API_KEY \
             --watch || echo "⚠️ TapRegistry verification failed or already verified"
 
+          sleep 2
+
           echo "Verifying TapExecutor implementation..."
           forge verify-contract $EXECUTOR_IMPL \
             src/TapExecutor.sol:TapExecutor \
@@ -88,12 +90,16 @@ jobs:
             --etherscan-api-key $BASESCAN_API_KEY \
             --watch || echo "⚠️ TapExecutor verification failed or already verified"
 
+          sleep 2
+
           echo "Verifying TapFactory..."
           forge verify-contract $FACTORY \
             src/TapFactory.sol:TapFactory \
             --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
             --watch || echo "⚠️ TapFactory verification failed or already verified"
+
+          sleep 2
 
           echo "Verifying MultiTap..."
           forge verify-contract $MULTITAP \
