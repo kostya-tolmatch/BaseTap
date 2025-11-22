@@ -56,7 +56,9 @@ contract TapRegistry is
             cooldown: cooldown,
             dailyLimit: dailyLimit,
             singleUse: singleUse,
-            active: true
+            active: true,
+            label: "",
+            description: ""
         });
 
         tapOwners[tapId] = msg.sender;
@@ -165,7 +167,9 @@ contract TapRegistry is
             cooldown: cooldown,
             dailyLimit: dailyLimit,
             singleUse: singleUse,
-            active: true
+            active: true,
+            label: "",
+            description: ""
         });
 
         tapOwners[tapId] = msg.sender;
