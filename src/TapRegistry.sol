@@ -67,7 +67,7 @@ contract TapRegistry is
         return tapId;
     }
 
-    function executeTap(uint256 tapId) external nonReentrant whenNotPaused {
+    function executeTap(uint256 tapId) external payable nonReentrant whenNotPaused {
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
 
