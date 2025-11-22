@@ -5,6 +5,7 @@ libs = ["lib"]
 solc_version = "0.8.23"
 optimizer = true
 optimizer_runs = 800
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
 
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"
