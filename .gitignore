@@ -2,8 +2,6 @@ cache/
 out/
 node_modules/
 .env
-lib/
-broadcast/
 *.swp
 .DS_Store
 
@@ -11,5 +9,6 @@ broadcast/
 !deployments/
 !deployments/*.json
 
-# Ignore broadcast details except deployment receipts
+# Keep broadcast receipts but ignore dry-runs
 broadcast/**/dry-run/
+broadcast/**/*.s.sol

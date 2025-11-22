@@ -56,7 +56,9 @@ contract TapRegistry is
             cooldown: cooldown,
             dailyLimit: dailyLimit,
             singleUse: singleUse,
-            active: true
+            active: true,
+            label: "",
+            description: ""
         });
 
         tapOwners[tapId] = msg.sender;
@@ -65,7 +67,7 @@ contract TapRegistry is
         return tapId;
     }
 
-    function executeTap(uint256 tapId) external nonReentrant whenNotPaused {
+    function executeTap(uint256 tapId) external payable nonReentrant whenNotPaused {
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
 
@@ -118,7 +120,6 @@ contract TapRegistry is
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-}
 
     function updateTap(uint256 tapId, uint256 newAmount, uint256 newCooldown) external {
         require(tapOwners[tapId] == msg.sender, "Not tap owner");
@@ -140,9 +141,7 @@ contract TapRegistry is
         _taps[tapId].active = false;
 
         emit TapDeactivated(tapId);
-    
-}
-uint256[44] private __gap;
+    }
 
     receive() external payable {}
 
@@ -168,7 +167,9 @@ uint256[44] private __gap;
             cooldown: cooldown,
             dailyLimit: dailyLimit,
             singleUse: singleUse,
-            active: true
+            active: true,
+            label: "",
+            description: ""
         });
 
         tapOwners[tapId] = msg.sender;
@@ -357,3 +358,6 @@ uint256[44] private __gap;
 
         emit EmergencyWithdraw(token, amount, to);
     }
+
+    uint256[44] private __gap;
+}

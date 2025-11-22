@@ -28,5 +28,5 @@ interface ITapRegistry {
         bool singleUse
     ) external returns (uint256);
 
-    function executeTap(uint256 tapId) external;
+    function executeTap(uint256 tapId) external payable;
 }
