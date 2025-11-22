@@ -140,9 +140,7 @@ contract TapRegistry is
         _taps[tapId].active = false;
 
         emit TapDeactivated(tapId);
-    
-}
-uint256[44] private __gap;
+    }
 
     receive() external payable {}
 
@@ -357,3 +355,6 @@ uint256[44] private __gap;
 
         emit EmergencyWithdraw(token, amount, to);
     }
+
+    uint256[44] private __gap;
+}

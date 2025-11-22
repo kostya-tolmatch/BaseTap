@@ -2,7 +2,6 @@ cache/
 out/
 node_modules/
 .env
-lib/
 broadcast/
 *.swp
 .DS_Store
