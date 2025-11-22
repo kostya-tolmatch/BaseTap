@@ -61,10 +61,8 @@ jobs:
           NETWORK: ${{ inputs.network }}
         run: |
           if [ "${{ inputs.network }}" == "base-sepolia" ]; then
-            VERIFIER_URL="https://api-sepolia.basescan.org/api"
             CHAIN_ID=84532
           else
-            VERIFIER_URL="https://api.basescan.org/api"
             CHAIN_ID=8453
           fi
 
@@ -79,34 +77,30 @@ jobs:
           echo "Verifying TapRegistry implementation..."
           forge verify-contract $REGISTRY_IMPL \
             src/TapRegistry.sol:TapRegistry \
-            --chain-id $CHAIN_ID \
-            --verifier-url $VERIFIER_URL \
+            --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "TapRegistry impl verification failed or already verified"
+            --watch || echo "⚠️ TapRegistry verification failed or already verified"
 
           echo "Verifying TapExecutor implementation..."
           forge verify-contract $EXECUTOR_IMPL \
             src/TapExecutor.sol:TapExecutor \
-            --chain-id $CHAIN_ID \
-            --verifier-url $VERIFIER_URL \
+            --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "TapExecutor impl verification failed or already verified"
+            --watch || echo "⚠️ TapExecutor verification failed or already verified"
 
           echo "Verifying TapFactory..."
           forge verify-contract $FACTORY \
             src/TapFactory.sol:TapFactory \
-            --chain-id $CHAIN_ID \
-            --verifier-url $VERIFIER_URL \
+            --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "TapFactory verification failed or already verified"
+            --watch || echo "⚠️ TapFactory verification failed or already verified"
 
           echo "Verifying MultiTap..."
           forge verify-contract $MULTITAP \
             src/MultiTap.sol:MultiTap \
-            --chain-id $CHAIN_ID \
-            --verifier-url $VERIFIER_URL \
+            --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "MultiTap verification failed or already verified"
+            --watch || echo "⚠️ MultiTap verification failed or already verified"
 
           echo "✅ Verification complete!"
 
