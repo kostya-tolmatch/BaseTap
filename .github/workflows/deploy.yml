@@ -1,4 +1,4 @@
-name: Deploy and Save Addresses
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -48,7 +48,7 @@ jobs:
             VERIFIER_URL="https://api.basescan.org/api"
           fi
 
-          forge script script/DeployAll.s.sol:DeployAll \
+          forge script script/DeployIncremental.s.sol:DeployIncremental \
             --rpc-url $RPC_URL \
             --broadcast \
             --slow \
