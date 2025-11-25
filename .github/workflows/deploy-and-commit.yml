@@ -48,7 +48,7 @@ jobs:
             VERIFIER_URL="https://api.basescan.org/api"
           fi
 
-          forge script script/DeployAndSave.s.sol:DeployAndSave \
+          forge script script/DeployAll.s.sol:DeployAll \
             --rpc-url $RPC_URL \
             --broadcast \
             --slow \
@@ -73,6 +73,8 @@ jobs:
           EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
           FACTORY=$(jq -r '.TapFactory' deployments/${{ inputs.network }}.json)
           MULTITAP=$(jq -r '.MultiTap' deployments/${{ inputs.network }}.json)
+          BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
 
           echo "Verifying TapRegistry implementation..."
           forge verify-contract $REGISTRY_IMPL \
@@ -108,6 +110,15 @@ jobs:
             --etherscan-api-key $BASESCAN_API_KEY \
             --watch || echo "⚠️ MultiTap verification failed or already verified"
 
+          sleep 2
+
+          echo "Verifying BaseTapRegistry implementation..."
+          forge verify-contract $BASETAP_IMPL \
+            src/BaseTapRegistry.sol:BaseTapRegistry \
+            --chain $CHAIN_ID \
+            --etherscan-api-key $BASESCAN_API_KEY \
+            --watch || echo "⚠️ BaseTapRegistry verification failed or already verified"
+
           echo "✅ Verification complete!"
 
       - name: Configure git
@@ -136,6 +147,8 @@ jobs:
           EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
           FACTORY=$(jq -r '.TapFactory' deployments/${{ inputs.network }}.json)
           MULTITAP=$(jq -r '.MultiTap' deployments/${{ inputs.network }}.json)
+          BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
 
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -149,6 +162,7 @@ jobs:
           echo "| **TapExecutor** | [\`${EXECUTOR_PROXY:0:8}...\`]($EXPLORER/address/$EXECUTOR_PROXY) | [\`${EXECUTOR_IMPL:0:8}...\`]($EXPLORER/address/$EXECUTOR_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
           echo "| **TapFactory** | - | [\`${FACTORY:0:8}...\`]($EXPLORER/address/$FACTORY#code) |" >> $GITHUB_STEP_SUMMARY
           echo "| **MultiTap** | - | [\`${MULTITAP:0:8}...\`]($EXPLORER/address/$MULTITAP#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **BaseTapRegistry** | [\`${BASETAP_PROXY:0:8}...\`]($EXPLORER/address/$BASETAP_PROXY) | [\`${BASETAP_IMPL:0:8}...\`]($EXPLORER/address/$BASETAP_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Full Deployment Data" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
