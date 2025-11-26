@@ -10,6 +10,16 @@
     "proxy": "0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7",
     "implementation": "0x13c816beA80cAee9753A48419d17FEd82c7Ca00b"
   },
-  "TapFactory": "0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74",
-  "MultiTap": "0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE"
+  "TapFactory": {
+    "proxy": "",
+    "implementation": "0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74"
+  },
+  "MultiTap": {
+    "proxy": "",
+    "implementation": "0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE"
+  },
+  "BaseTapRegistry": {
+    "proxy": "",
+    "implementation": ""
+  }
 }
