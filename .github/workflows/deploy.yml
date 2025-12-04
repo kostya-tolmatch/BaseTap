@@ -10,6 +10,22 @@ on:
         options:
           - base-sepolia
           - base
+      action:
+        description: 'Deployment action'
+        required: true
+        type: choice
+        options:
+          - deploy-all
+          - upgrade-all
+          - upgrade-tapregistry
+          - upgrade-tapexecutor
+          - deploy-multitap
+          - deploy-tapfactory
+          - deploy-basetapregistry
+      proxy_address:
+        description: 'Proxy address (only for single upgrades)'
+        required: false
+        type: string
 
 jobs:
   deploy:
@@ -33,7 +49,7 @@ jobs:
       - name: Create deployments directory
         run: mkdir -p deployments
 
-      - name: Deploy contracts
+      - name: Deploy/Upgrade contracts
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
@@ -42,17 +58,73 @@ jobs:
         run: |
           if [ "${{ inputs.network }}" == "base-sepolia" ]; then
             RPC_URL=$BASE_SEPOLIA_RPC_URL
-            VERIFIER_URL="https://api-sepolia.basescan.org/api"
           else
             RPC_URL=$BASE_RPC_URL
-            VERIFIER_URL="https://api.basescan.org/api"
           fi
 
-          forge script script/DeployIncremental.s.sol:DeployIncremental \
-            --rpc-url $RPC_URL \
-            --broadcast \
-            --slow \
-            -vvvv
+          case "${{ inputs.action }}" in
+            deploy-all)
+              forge script script/DeploySystem.s.sol:DeploySystem \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --slow \
+                -vvvv
+              ;;
+            upgrade-all)
+              TAPREGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              TAPEXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+              BASETAPREGISTRY_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+
+              forge script script/UpgradeAll.s.sol:UpgradeAll \
+                --sig "run(address,address,address)" \
+                $TAPREGISTRY_PROXY $TAPEXECUTOR_PROXY $BASETAPREGISTRY_PROXY \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            upgrade-tapregistry)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapRegistry.s.sol:UpgradeTapRegistry \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            upgrade-tapexecutor)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapExecutor.s.sol:UpgradeTapExecutor \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            deploy-multitap)
+              forge script script/DeployMultiTap.s.sol:DeployMultiTap \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            deploy-tapfactory)
+              forge script script/DeployTapFactory.s.sol:DeployTapFactory \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            deploy-basetapregistry)
+              forge script script/DeployBaseTapRegistry.s.sol:DeployBaseTapRegistry \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+          esac
 
       - name: Verify contracts
         if: success()
