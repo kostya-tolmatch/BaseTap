@@ -20,17 +20,22 @@ contract MultiTap {
     event SplitExecuted(uint256 indexed splitId, address indexed asset, uint256 totalAmount);
 
     function createSplit(Split[] calldata _splits) external returns (uint256) {
+        unchecked {
+            ++splitCounter;
+        }
+        uint256 currentSplitId = splitCounter;
         uint256 totalShare;
+
         for (uint256 i; i < _splits.length; ) {
             require(_splits[i].recipient != address(0), "Invalid recipient");
             totalShare += _splits[i].share;
-            splits[++splitCounter].push(_splits[i]);
+            splits[currentSplitId].push(_splits[i]);
             unchecked { ++i; }
         }
         require(totalShare == 10000, "Shares must equal 100%");
 
-        emit SplitCreated(splitCounter, _splits);
-        return splitCounter;
+        emit SplitCreated(currentSplitId, _splits);
+        return currentSplitId;
     }
 
     function executeSplit(uint256 splitId, address asset, uint256 totalAmount) external {

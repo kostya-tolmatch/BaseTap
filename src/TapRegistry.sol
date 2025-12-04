@@ -71,7 +71,7 @@ contract TapRegistry is
         TapPreset storage tap = _taps[tapId];
         require(tap.active, "Tap not active");
 
-        if (tap.cooldown > 0) {
+        if (tap.cooldown > 0 && _lastExecution[tapId] > 0) {
             require(
                 block.timestamp >= _lastExecution[tapId] + tap.cooldown,
                 "Cooldown period active"
@@ -273,7 +273,7 @@ contract TapRegistry is
         if (!tap.active) return false;
         if (paused()) return false;
         
-        if (tap.cooldown > 0) {
+        if (tap.cooldown > 0 && _lastExecution[tapId] > 0) {
             if (block.timestamp < _lastExecution[tapId] + tap.cooldown) {
                 return false;
             }

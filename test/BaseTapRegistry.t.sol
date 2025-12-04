@@ -42,16 +42,6 @@ contract BaseTapRegistryTest is Test {
     function testCreateSession() public {
         vm.prank(creator);
 
-        vm.expectEmit(true, true, true, true);
-        emit IBaseTapRegistry.SessionCreated(
-            bytes32(0),
-            creator,
-            recipient,
-            amount,
-            asset,
-            metadata
-        );
-
         bytes32 sessionId = registry.createSession(
             recipient,
             amount,

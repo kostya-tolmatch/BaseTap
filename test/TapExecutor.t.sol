@@ -83,10 +83,19 @@ contract TapExecutorTest is Test {
         token = new MockERC20();
         usdc = new MockUSDC();
 
+        // Mint tokens to both user and executor
         token.mint(user, 10000e18);
         usdc.mint(user, 10000e6);
+        token.mint(address(executor), 10000e18);
+        usdc.mint(address(executor), 10000e6);
 
+        // Approve registry for both user and executor
         vm.startPrank(user);
+        token.approve(address(registry), type(uint256).max);
+        usdc.approve(address(registry), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(address(executor));
         token.approve(address(registry), type(uint256).max);
         usdc.approve(address(registry), type(uint256).max);
         vm.stopPrank();
