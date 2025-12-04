@@ -167,6 +167,48 @@ jobs:
               ;;
           esac
 
+      - name: Update deployment addresses
+        if: success()
+        run: |
+          # Extract new implementation addresses from broadcast files after upgrades
+          case "${{ inputs.action }}" in
+            upgrade-tapregistry)
+              NEW_IMPL=$(grep -oP 'new TapRegistry@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapRegistry.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
+              if [ ! -z "$NEW_IMPL" ]; then
+                jq --arg impl "$NEW_IMPL" '.TapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                echo "Updated TapRegistry implementation to: $NEW_IMPL"
+              fi
+              ;;
+            upgrade-tapexecutor)
+              NEW_IMPL=$(grep -oP 'new TapExecutor@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapExecutor.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
+              if [ ! -z "$NEW_IMPL" ]; then
+                jq --arg impl "$NEW_IMPL" '.TapExecutor.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                echo "Updated TapExecutor implementation to: $NEW_IMPL"
+              fi
+              ;;
+            upgrade-multitap)
+              NEW_IMPL=$(grep -oP 'new MultiTap@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeMultiTap.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
+              if [ ! -z "$NEW_IMPL" ]; then
+                jq --arg impl "$NEW_IMPL" '.MultiTap.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                echo "Updated MultiTap implementation to: $NEW_IMPL"
+              fi
+              ;;
+            upgrade-tapfactory)
+              NEW_IMPL=$(grep -oP 'new TapFactory@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapFactory.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
+              if [ ! -z "$NEW_IMPL" ]; then
+                jq --arg impl "$NEW_IMPL" '.TapFactory.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                echo "Updated TapFactory implementation to: $NEW_IMPL"
+              fi
+              ;;
+            upgrade-basetapregistry)
+              NEW_IMPL=$(grep -oP 'new BaseTapRegistry@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeBaseTapRegistry.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
+              if [ ! -z "$NEW_IMPL" ]; then
+                jq --arg impl "$NEW_IMPL" '.BaseTapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                echo "Updated BaseTapRegistry implementation to: $NEW_IMPL"
+              fi
+              ;;
+          esac
+
       - name: Verify contracts
         if: success()
         env:
@@ -191,48 +233,54 @@ jobs:
           BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
           BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
 
-          echo "Verifying TapRegistry implementation..."
-          forge verify-contract $REGISTRY_IMPL \
-            src/TapRegistry.sol:TapRegistry \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ TapRegistry verification failed or already verified"
+          if [ ! -z "$REGISTRY_IMPL" ] && [ "$REGISTRY_IMPL" != "null" ] && [ "$REGISTRY_IMPL" != "" ]; then
+            echo "Verifying TapRegistry implementation..."
+            forge verify-contract $REGISTRY_IMPL \
+              src/TapRegistry.sol:TapRegistry \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapRegistry verification failed or already verified"
+            sleep 2
+          fi
 
-          sleep 2
+          if [ ! -z "$EXECUTOR_IMPL" ] && [ "$EXECUTOR_IMPL" != "null" ] && [ "$EXECUTOR_IMPL" != "" ]; then
+            echo "Verifying TapExecutor implementation..."
+            forge verify-contract $EXECUTOR_IMPL \
+              src/TapExecutor.sol:TapExecutor \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapExecutor verification failed or already verified"
+            sleep 2
+          fi
 
-          echo "Verifying TapExecutor implementation..."
-          forge verify-contract $EXECUTOR_IMPL \
-            src/TapExecutor.sol:TapExecutor \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ TapExecutor verification failed or already verified"
+          if [ ! -z "$MULTITAP_IMPL" ] && [ "$MULTITAP_IMPL" != "null" ] && [ "$MULTITAP_IMPL" != "" ]; then
+            echo "Verifying MultiTap implementation..."
+            forge verify-contract $MULTITAP_IMPL \
+              src/MultiTap.sol:MultiTap \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ MultiTap verification failed or already verified"
+            sleep 2
+          fi
 
-          sleep 2
+          if [ ! -z "$FACTORY_IMPL" ] && [ "$FACTORY_IMPL" != "null" ] && [ "$FACTORY_IMPL" != "" ]; then
+            echo "Verifying TapFactory implementation..."
+            forge verify-contract $FACTORY_IMPL \
+              src/TapFactory.sol:TapFactory \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapFactory verification failed or already verified"
+            sleep 2
+          fi
 
-          echo "Verifying MultiTap implementation..."
-          forge verify-contract $MULTITAP_IMPL \
-            src/MultiTap.sol:MultiTap \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ MultiTap verification failed or already verified"
-
-          sleep 2
-
-          echo "Verifying TapFactory implementation..."
-          forge verify-contract $FACTORY_IMPL \
-            src/TapFactory.sol:TapFactory \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ TapFactory verification failed or already verified"
-
-          sleep 2
-
-          echo "Verifying BaseTapRegistry implementation..."
-          forge verify-contract $BASETAP_IMPL \
-            src/BaseTapRegistry.sol:BaseTapRegistry \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ BaseTapRegistry verification failed or already verified"
+          if [ ! -z "$BASETAP_IMPL" ] && [ "$BASETAP_IMPL" != "null" ] && [ "$BASETAP_IMPL" != "" ]; then
+            echo "Verifying BaseTapRegistry implementation..."
+            forge verify-contract $BASETAP_IMPL \
+              src/BaseTapRegistry.sol:BaseTapRegistry \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ BaseTapRegistry verification failed or already verified"
+          fi
 
           echo "✅ Verification complete!"
 

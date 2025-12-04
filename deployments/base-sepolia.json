@@ -4,7 +4,7 @@
   "timestamp": "1763828456",
   "TapRegistry": {
     "proxy": "0xaD1c6Feb90a0167A926341BA74d9700d958D5DAF",
-    "implementation": "0x8ecA32822E8a984274bA931c130F0C5fB70BBd41"
+    "implementation": "0xf86652A0da022426A886c966f397D64135Ce1608"
   },
   "TapExecutor": {
     "proxy": "0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7",
