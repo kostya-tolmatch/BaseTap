@@ -16,7 +16,6 @@ contract ValidateDeployment is Script {
         address registryOwner = registry.owner();
         console.log("Registry Owner:", registryOwner);
         console.log("Registry Paused:", registry.paused());
-        console.log("Tap Counter:", registry.getTapCounter());
         
         // Check executor
         address executorOwner = executor.owner();
@@ -25,6 +24,6 @@ contract ValidateDeployment is Script {
         console.log("Executor Registry:", executorRegistry);
         
         require(executorRegistry == registryProxy, "Registry mismatch");
-        console.log("\n✅ Deployment validated successfully");
+        console.log("\n[OK] Deployment validated successfully");
     }
 }
