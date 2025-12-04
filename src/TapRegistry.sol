@@ -191,14 +191,28 @@ contract TapRegistry is
         tapIds = new uint256[](recipients.length);
 
         for (uint256 i; i < recipients.length; ) {
-            tapIds[i] = this.createTap(
-                recipients[i],
-                assets[i],
-                amounts[i],
-                cooldowns[i],
-                0,
-                false
-            );
+            require(recipients[i] != address(0), "Invalid recipient");
+            require(assets[i] != address(0), "Invalid asset");
+            require(amounts[i] > 0, "Invalid amount");
+
+            uint256 tapId = ++_tapCounter;
+
+            _taps[tapId] = TapPreset({
+                recipient: recipients[i],
+                asset: assets[i],
+                amount: amounts[i],
+                cooldown: cooldowns[i],
+                dailyLimit: 0,
+                singleUse: false,
+                active: true,
+                label: "",
+                description: ""
+            });
+
+            tapOwners[tapId] = msg.sender;
+            emit TapCreated(tapId, msg.sender, recipients[i]);
+
+            tapIds[i] = tapId;
             unchecked { ++i; }
         }
     }

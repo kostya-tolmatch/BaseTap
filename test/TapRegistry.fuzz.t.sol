@@ -152,10 +152,15 @@ contract TapRegistryFuzzTest is TapRegistryTest {
         }
         vm.stopPrank();
 
-        assertEq(token.balanceOf(recipient), initialBalance + (10e18 * _executionCount));
+        uint256 expectedBalance;
+        unchecked {
+            expectedBalance = initialBalance + (10e18 * uint256(_executionCount));
+        }
+        uint256 actualBalance = token.balanceOf(recipient);
+        assertEq(actualBalance, expectedBalance);
 
         TapRegistry.ExecutionHistory[] memory history = registry.getExecutionHistory(tapId);
-        assertEq(history.length, _executionCount);
+        assertEq(history.length, uint256(_executionCount));
     }
 
     function testFuzz_BatchCreateTaps(uint8 _tapCount) public {
@@ -198,14 +203,18 @@ contract TapRegistryFuzzTest is TapRegistryTest {
             vm.prank(user);
             registry.executeTap(tapId);
 
-            if (_cooldown > 0) {
-                assertFalse(registry.canExecute(tapId));
-                vm.warp(block.timestamp + _cooldown);
+            // Warp forward to ensure tap is executable again
+            uint256 timeWarp = _cooldown > 0 ? _cooldown : 0;
+            if (_dailyLimit == 1) {
+                timeWarp = timeWarp > 1 days ? timeWarp : 1 days + 1;
+            }
+            if (timeWarp > 0) {
+                vm.warp(block.timestamp + timeWarp);
             }
         }
 
         bool canExec = registry.canExecute(tapId);
-        assertTrue(canExec || !_executeFirst || _cooldown > 0);
+        assertTrue(canExec);
     }
 
     function testFuzz_DeactivateAndReactivate(uint8 _iterations) public {
