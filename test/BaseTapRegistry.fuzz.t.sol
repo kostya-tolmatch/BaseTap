@@ -47,7 +47,7 @@ contract BaseTapRegistryFuzzTest is Test {
 
         assertTrue(sessionId != bytes32(0));
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
@@ -83,7 +83,7 @@ contract BaseTapRegistryFuzzTest is Test {
 
         assertTrue(registry.isSessionPaid(sessionId));
 
-        IBaseTapRegistry.PaymentSession memory session = registry
+        BaseTapRegistry.PaymentSession memory session = registry
             .getSessionByPaymentId(paymentId);
 
         assertEq(session.sessionId, sessionId);
@@ -110,11 +110,11 @@ contract BaseTapRegistryFuzzTest is Test {
         vm.prank(creator);
         registry.cancelSession(sessionId);
 
-        IBaseTapRegistry.PaymentStatus status = registry.getSessionStatus(
+        BaseTapRegistry.PaymentStatus status = registry.getSessionStatus(
             sessionId
         );
 
-        assertTrue(status == IBaseTapRegistry.PaymentStatus.Cancelled);
+        assertTrue(status == BaseTapRegistry.PaymentStatus.Cancelled);
     }
 
     function testFuzzMultipleSessions(
@@ -205,7 +205,7 @@ contract BaseTapRegistryFuzzTest is Test {
             metadata
         );
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 

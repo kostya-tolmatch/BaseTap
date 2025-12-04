@@ -61,7 +61,7 @@ contract BaseTapRegistryTest is Test {
 
         assertTrue(sessionId != bytes32(0));
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
@@ -73,7 +73,7 @@ contract BaseTapRegistryTest is Test {
         assertEq(session.paidAt, 0);
         assertEq(session.paymentId, "");
         assertTrue(
-            session.status == IBaseTapRegistry.PaymentStatus.Pending
+            session.status == BaseTapRegistry.PaymentStatus.Pending
         );
         assertEq(session.metadata, metadata);
     }
@@ -111,12 +111,12 @@ contract BaseTapRegistryTest is Test {
         vm.prank(owner);
         registry.markPaid(sessionId, paymentId);
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
         assertTrue(
-            session.status == IBaseTapRegistry.PaymentStatus.Paid
+            session.status == BaseTapRegistry.PaymentStatus.Paid
         );
         assertEq(session.paymentId, paymentId);
         assertEq(session.paidAt, block.timestamp);
@@ -196,12 +196,12 @@ contract BaseTapRegistryTest is Test {
         vm.prank(creator);
         registry.cancelSession(sessionId);
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
         assertTrue(
-            session.status == IBaseTapRegistry.PaymentStatus.Cancelled
+            session.status == BaseTapRegistry.PaymentStatus.Cancelled
         );
     }
 
@@ -217,12 +217,12 @@ contract BaseTapRegistryTest is Test {
         vm.prank(owner);
         registry.cancelSession(sessionId);
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
         assertTrue(
-            session.status == IBaseTapRegistry.PaymentStatus.Cancelled
+            session.status == BaseTapRegistry.PaymentStatus.Cancelled
         );
     }
 
@@ -292,7 +292,7 @@ contract BaseTapRegistryTest is Test {
         vm.prank(owner);
         registry.markPaid(sessionId, paymentId);
 
-        IBaseTapRegistry.PaymentSession memory session = registry
+        BaseTapRegistry.PaymentSession memory session = registry
             .getSessionByPaymentId(paymentId);
 
         assertEq(session.sessionId, sessionId);
@@ -313,16 +313,16 @@ contract BaseTapRegistryTest is Test {
             metadata
         );
 
-        IBaseTapRegistry.PaymentStatus status = registry.getSessionStatus(
+        BaseTapRegistry.PaymentStatus status = registry.getSessionStatus(
             sessionId
         );
-        assertTrue(status == IBaseTapRegistry.PaymentStatus.Pending);
+        assertTrue(status == BaseTapRegistry.PaymentStatus.Pending);
 
         vm.prank(owner);
         registry.markPaid(sessionId, "payment_123");
 
         status = registry.getSessionStatus(sessionId);
-        assertTrue(status == IBaseTapRegistry.PaymentStatus.Paid);
+        assertTrue(status == BaseTapRegistry.PaymentStatus.Paid);
     }
 
     function testIsSessionPaidNonexistent() public view {
@@ -351,10 +351,10 @@ contract BaseTapRegistryTest is Test {
 
         assertTrue(session1 != session2);
 
-        IBaseTapRegistry.PaymentSession memory s1 = registry.getSession(
+        BaseTapRegistry.PaymentSession memory s1 = registry.getSession(
             session1
         );
-        IBaseTapRegistry.PaymentSession memory s2 = registry.getSession(
+        BaseTapRegistry.PaymentSession memory s2 = registry.getSession(
             session2
         );
 
@@ -376,12 +376,12 @@ contract BaseTapRegistryTest is Test {
         vm.prank(owner);
         registry.markPaid(sessionId, "");
 
-        IBaseTapRegistry.PaymentSession memory session = registry.getSession(
+        BaseTapRegistry.PaymentSession memory session = registry.getSession(
             sessionId
         );
 
         assertTrue(
-            session.status == IBaseTapRegistry.PaymentStatus.Paid
+            session.status == BaseTapRegistry.PaymentStatus.Paid
         );
         assertEq(session.paymentId, "");
     }
