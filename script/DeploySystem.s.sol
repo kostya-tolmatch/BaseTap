@@ -10,7 +10,7 @@ import {BaseTapRegistry} from "../src/BaseTapRegistry.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeploySystem
-/// @notice Deploys entire BaseTap system and saves to deployments/{network}.json
+/// @notice Deploys entire BaseTap system (all contracts with UUPS proxies)
 contract DeploySystem is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -41,11 +41,27 @@ contract DeploySystem is Script {
             tapExecutorInitData
         );
 
-        // 3. Deploy TapFactory (no proxy)
-        TapFactory tapFactory = new TapFactory();
+        // 3. Deploy TapFactory with proxy
+        TapFactory tapFactoryImpl = new TapFactory();
+        bytes memory tapFactoryInitData = abi.encodeWithSelector(
+            TapFactory.initialize.selector,
+            deployer
+        );
+        ERC1967Proxy tapFactoryProxy = new ERC1967Proxy(
+            address(tapFactoryImpl),
+            tapFactoryInitData
+        );
 
-        // 4. Deploy MultiTap (no proxy)
-        MultiTap multiTap = new MultiTap();
+        // 4. Deploy MultiTap with proxy
+        MultiTap multiTapImpl = new MultiTap();
+        bytes memory multiTapInitData = abi.encodeWithSelector(
+            MultiTap.initialize.selector,
+            deployer
+        );
+        ERC1967Proxy multiTapProxy = new ERC1967Proxy(
+            address(multiTapImpl),
+            multiTapInitData
+        );
 
         // 5. Deploy BaseTapRegistry with proxy
         BaseTapRegistry baseTapRegistryImpl = new BaseTapRegistry();
@@ -85,10 +101,14 @@ contract DeploySystem is Script {
             vm.toString(address(tapExecutorProxy)),
             '",\n    "implementation": "',
             vm.toString(address(tapExecutorImpl)),
-            '"\n  },\n  "TapFactory": {\n    "proxy": "",\n    "implementation": "',
-            vm.toString(address(tapFactory)),
-            '"\n  },\n  "MultiTap": {\n    "proxy": "",\n    "implementation": "',
-            vm.toString(address(multiTap)),
+            '"\n  },\n  "TapFactory": {\n    "proxy": "',
+            vm.toString(address(tapFactoryProxy)),
+            '",\n    "implementation": "',
+            vm.toString(address(tapFactoryImpl)),
+            '"\n  },\n  "MultiTap": {\n    "proxy": "',
+            vm.toString(address(multiTapProxy)),
+            '",\n    "implementation": "',
+            vm.toString(address(multiTapImpl)),
             '"\n  },\n  "BaseTapRegistry": {\n    "proxy": "',
             vm.toString(address(baseTapRegistryProxy)),
             '",\n    "implementation": "',
@@ -102,8 +122,8 @@ contract DeploySystem is Script {
         console.log("Network:", network);
         console.log("TapRegistry Proxy:", address(tapRegistryProxy));
         console.log("TapExecutor Proxy:", address(tapExecutorProxy));
-        console.log("TapFactory:", address(tapFactory));
-        console.log("MultiTap:", address(multiTap));
+        console.log("TapFactory Proxy:", address(tapFactoryProxy));
+        console.log("MultiTap Proxy:", address(multiTapProxy));
         console.log("BaseTapRegistry Proxy:", address(baseTapRegistryProxy));
         console.log("Saved to:", path);
     }

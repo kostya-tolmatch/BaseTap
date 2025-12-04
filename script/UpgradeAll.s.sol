@@ -5,6 +5,8 @@ import "forge-std/Script.sol";
 import "../src/TapRegistry.sol";
 import "../src/TapExecutor.sol";
 import "../src/BaseTapRegistry.sol";
+import "../src/MultiTap.sol";
+import "../src/TapFactory.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title UpgradeAll
@@ -13,7 +15,9 @@ contract UpgradeAll is Script {
     function run(
         address tapRegistryProxy,
         address tapExecutorProxy,
-        address baseTapRegistryProxy
+        address baseTapRegistryProxy,
+        address multiTapProxy,
+        address tapFactoryProxy
     ) external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
@@ -28,6 +32,12 @@ contract UpgradeAll is Script {
 
         BaseTapRegistry newBaseTapRegistry = new BaseTapRegistry();
         console.log("BaseTapRegistry implementation:", address(newBaseTapRegistry));
+
+        MultiTap newMultiTap = new MultiTap();
+        console.log("MultiTap implementation:", address(newMultiTap));
+
+        TapFactory newTapFactory = new TapFactory();
+        console.log("TapFactory implementation:", address(newTapFactory));
 
         // Upgrade proxies
         if (tapRegistryProxy != address(0)) {
@@ -52,6 +62,22 @@ contract UpgradeAll is Script {
                 ""
             );
             console.log("BaseTapRegistry upgraded at:", baseTapRegistryProxy);
+        }
+
+        if (multiTapProxy != address(0)) {
+            UUPSUpgradeable(multiTapProxy).upgradeToAndCall(
+                address(newMultiTap),
+                ""
+            );
+            console.log("MultiTap upgraded at:", multiTapProxy);
+        }
+
+        if (tapFactoryProxy != address(0)) {
+            UUPSUpgradeable(tapFactoryProxy).upgradeToAndCall(
+                address(newTapFactory),
+                ""
+            );
+            console.log("TapFactory upgraded at:", tapFactoryProxy);
         }
 
         vm.stopBroadcast();

@@ -19,6 +19,9 @@ on:
           - upgrade-all
           - upgrade-tapregistry
           - upgrade-tapexecutor
+          - upgrade-multitap
+          - upgrade-tapfactory
+          - upgrade-basetapregistry
           - deploy-multitap
           - deploy-tapfactory
           - deploy-basetapregistry
@@ -74,10 +77,12 @@ jobs:
               TAPREGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
               TAPEXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
               BASETAPREGISTRY_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+              TAPFACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
 
               forge script script/UpgradeAll.s.sol:UpgradeAll \
-                --sig "run(address,address,address)" \
-                $TAPREGISTRY_PROXY $TAPEXECUTOR_PROXY $BASETAPREGISTRY_PROXY \
+                --sig "run(address,address,address,address,address)" \
+                $TAPREGISTRY_PROXY $TAPEXECUTOR_PROXY $BASETAPREGISTRY_PROXY $MULTITAP_PROXY $TAPFACTORY_PROXY \
                 --rpc-url $RPC_URL \
                 --broadcast \
                 -vvvv
@@ -101,6 +106,42 @@ jobs:
               fi
 
               forge script script/UpgradeTapExecutor.s.sol:UpgradeTapExecutor \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            upgrade-multitap)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeMultiTap.s.sol:UpgradeMultiTap \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            upgrade-tapfactory)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapFactory.s.sol:UpgradeTapFactory \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                -vvvv
+              ;;
+            upgrade-basetapregistry)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeBaseTapRegistry.s.sol:UpgradeBaseTapRegistry \
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
@@ -143,8 +184,10 @@ jobs:
           REGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
           EXECUTOR_IMPL=$(jq -r '.TapExecutor.implementation' deployments/${{ inputs.network }}.json)
           EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
-          FACTORY=$(jq -r '.TapFactory' deployments/${{ inputs.network }}.json)
-          MULTITAP=$(jq -r '.MultiTap' deployments/${{ inputs.network }}.json)
+          MULTITAP_IMPL=$(jq -r '.MultiTap.implementation' deployments/${{ inputs.network }}.json)
+          MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+          FACTORY_IMPL=$(jq -r '.TapFactory.implementation' deployments/${{ inputs.network }}.json)
+          FACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
           BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
           BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
 
@@ -166,21 +209,21 @@ jobs:
 
           sleep 2
 
-          echo "Verifying TapFactory..."
-          forge verify-contract $FACTORY \
-            src/TapFactory.sol:TapFactory \
-            --chain $CHAIN_ID \
-            --etherscan-api-key $BASESCAN_API_KEY \
-            --watch || echo "⚠️ TapFactory verification failed or already verified"
-
-          sleep 2
-
-          echo "Verifying MultiTap..."
-          forge verify-contract $MULTITAP \
+          echo "Verifying MultiTap implementation..."
+          forge verify-contract $MULTITAP_IMPL \
             src/MultiTap.sol:MultiTap \
             --chain $CHAIN_ID \
             --etherscan-api-key $BASESCAN_API_KEY \
             --watch || echo "⚠️ MultiTap verification failed or already verified"
+
+          sleep 2
+
+          echo "Verifying TapFactory implementation..."
+          forge verify-contract $FACTORY_IMPL \
+            src/TapFactory.sol:TapFactory \
+            --chain $CHAIN_ID \
+            --etherscan-api-key $BASESCAN_API_KEY \
+            --watch || echo "⚠️ TapFactory verification failed or already verified"
 
           sleep 2
 
@@ -217,8 +260,10 @@ jobs:
           REGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
           EXECUTOR_IMPL=$(jq -r '.TapExecutor.implementation' deployments/${{ inputs.network }}.json)
           EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
-          FACTORY=$(jq -r '.TapFactory' deployments/${{ inputs.network }}.json)
-          MULTITAP=$(jq -r '.MultiTap' deployments/${{ inputs.network }}.json)
+          MULTITAP_IMPL=$(jq -r '.MultiTap.implementation' deployments/${{ inputs.network }}.json)
+          MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+          FACTORY_IMPL=$(jq -r '.TapFactory.implementation' deployments/${{ inputs.network }}.json)
+          FACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
           BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
           BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
 
@@ -232,8 +277,8 @@ jobs:
           echo "|----------|-------|----------------|" >> $GITHUB_STEP_SUMMARY
           echo "| **TapRegistry** | [\`${REGISTRY_PROXY:0:8}...\`]($EXPLORER/address/$REGISTRY_PROXY) | [\`${REGISTRY_IMPL:0:8}...\`]($EXPLORER/address/$REGISTRY_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
           echo "| **TapExecutor** | [\`${EXECUTOR_PROXY:0:8}...\`]($EXPLORER/address/$EXECUTOR_PROXY) | [\`${EXECUTOR_IMPL:0:8}...\`]($EXPLORER/address/$EXECUTOR_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
-          echo "| **TapFactory** | - | [\`${FACTORY:0:8}...\`]($EXPLORER/address/$FACTORY#code) |" >> $GITHUB_STEP_SUMMARY
-          echo "| **MultiTap** | - | [\`${MULTITAP:0:8}...\`]($EXPLORER/address/$MULTITAP#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MultiTap** | [\`${MULTITAP_PROXY:0:8}...\`]($EXPLORER/address/$MULTITAP_PROXY) | [\`${MULTITAP_IMPL:0:8}...\`]($EXPLORER/address/$MULTITAP_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **TapFactory** | [\`${FACTORY_PROXY:0:8}...\`]($EXPLORER/address/$FACTORY_PROXY) | [\`${FACTORY_IMPL:0:8}...\`]($EXPLORER/address/$FACTORY_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
           echo "| **BaseTapRegistry** | [\`${BASETAP_PROXY:0:8}...\`]($EXPLORER/address/$BASETAP_PROXY) | [\`${BASETAP_IMPL:0:8}...\`]($EXPLORER/address/$BASETAP_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Full Deployment Data" >> $GITHUB_STEP_SUMMARY

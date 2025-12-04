@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import "forge-std/Test.sol";
 import "../src/MultiTap.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./mocks/MockUSDC.sol";
 
 contract MockERC20 is IERC20 {
@@ -56,7 +57,14 @@ contract MultiTapTest is Test {
     address public recipient3 = address(4);
 
     function setUp() public {
-        multiTap = new MultiTap();
+        MultiTap implementation = new MultiTap();
+        bytes memory initData = abi.encodeWithSelector(
+            MultiTap.initialize.selector,
+            address(this)
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        multiTap = MultiTap(address(proxy));
+
         token = new MockERC20();
         usdc = new MockUSDC();
 

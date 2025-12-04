@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../src/TapFactory.sol";
 import "../src/TapRegistry.sol";
 import "../src/TapExecutor.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TapFactoryTest is Test {
     TapFactory public factory;
@@ -12,7 +13,13 @@ contract TapFactoryTest is Test {
     address public user = address(2);
 
     function setUp() public {
-        factory = new TapFactory();
+        TapFactory implementation = new TapFactory();
+        bytes memory initData = abi.encodeWithSelector(
+            TapFactory.initialize.selector,
+            address(this)
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        factory = TapFactory(address(proxy));
     }
 
     function testDeployRegistry() public {
