@@ -166,70 +166,24 @@ contract DeployIncremental is Script {
             console.log("\nTapExecutor already deployed at:", existing.tapExecutorProxy);
         }
 
-        if (existing.tapFactoryProxy == address(0)) {
-            console.log("\nDeploying TapFactory with proxy...");
-            TapFactory impl = new TapFactory();
-            bytes memory initData = abi.encodeWithSelector(
-                TapFactory.initialize.selector,
-                deployer
-            );
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                address(impl),
-                initData
-            );
-            deployed.tapFactoryProxy = address(proxy);
-            deployed.tapFactoryImpl = address(impl);
-            console.log("  Proxy:", address(proxy));
-            console.log("  Implementation:", address(impl));
-        } else if (existing.tapFactoryImpl != address(0) && existing.tapFactoryProxy == address(0)) {
-            console.log("\nDeploying proxy for existing TapFactory implementation...");
-            bytes memory initData = abi.encodeWithSelector(
-                TapFactory.initialize.selector,
-                deployer
-            );
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                existing.tapFactoryImpl,
-                initData
-            );
-            deployed.tapFactoryProxy = address(proxy);
-            deployed.tapFactoryImpl = existing.tapFactoryImpl;
-            console.log("  Proxy:", address(proxy));
-            console.log("  Existing Implementation:", existing.tapFactoryImpl);
+        if (existing.tapFactoryImpl == address(0)) {
+            console.log("\nDeploying TapFactory...");
+            TapFactory factory = new TapFactory();
+            deployed.tapFactoryImpl = address(factory);
+            deployed.tapFactoryProxy = address(0);
+            console.log("  Address:", address(factory));
         } else {
-            console.log("\nTapFactory already deployed at:", existing.tapFactoryProxy);
+            console.log("\nTapFactory already deployed at:", existing.tapFactoryImpl);
         }
 
-        if (existing.multiTapProxy == address(0)) {
-            console.log("\nDeploying MultiTap with proxy...");
-            MultiTap impl = new MultiTap();
-            bytes memory initData = abi.encodeWithSelector(
-                MultiTap.initialize.selector,
-                deployer
-            );
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                address(impl),
-                initData
-            );
-            deployed.multiTapProxy = address(proxy);
-            deployed.multiTapImpl = address(impl);
-            console.log("  Proxy:", address(proxy));
-            console.log("  Implementation:", address(impl));
-        } else if (existing.multiTapImpl != address(0) && existing.multiTapProxy == address(0)) {
-            console.log("\nDeploying proxy for existing MultiTap implementation...");
-            bytes memory initData = abi.encodeWithSelector(
-                MultiTap.initialize.selector,
-                deployer
-            );
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                existing.multiTapImpl,
-                initData
-            );
-            deployed.multiTapProxy = address(proxy);
-            deployed.multiTapImpl = existing.multiTapImpl;
-            console.log("  Proxy:", address(proxy));
-            console.log("  Existing Implementation:", existing.multiTapImpl);
+        if (existing.multiTapImpl == address(0)) {
+            console.log("\nDeploying MultiTap...");
+            MultiTap multiTap = new MultiTap();
+            deployed.multiTapImpl = address(multiTap);
+            deployed.multiTapProxy = address(0);
+            console.log("  Address:", address(multiTap));
         } else {
-            console.log("\nMultiTap already deployed at:", existing.multiTapProxy);
+            console.log("\nMultiTap already deployed at:", existing.multiTapImpl);
         }
 
         if (existing.baseTapRegistryProxy == address(0)) {
