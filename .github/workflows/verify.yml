@@ -1,0 +1,72 @@
+name: Verify Contract
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Network'
+        required: true
+        type: choice
+        options:
+          - base-sepolia
+          - base
+      contract:
+        description: 'Contract to verify'
+        required: true
+        type: choice
+        options:
+          - TapRegistry
+          - TapExecutor
+          - MultiTap
+          - TapFactory
+          - BaseTapRegistry
+      address:
+        description: 'Contract address to verify (optional, will use from deployment JSON if empty)'
+        required: false
+        type: string
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Verify contract
+        env:
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+        run: |
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            CHAIN_ID=84532
+          else
+            CHAIN_ID=8453
+          fi
+
+          # Get address from input or deployment JSON
+          if [ -z "${{ inputs.address }}" ]; then
+            ADDRESS=$(jq -r '.${{ inputs.contract }}.implementation' deployments/${{ inputs.network }}.json)
+            echo "Using address from deployment JSON: $ADDRESS"
+          else
+            ADDRESS="${{ inputs.address }}"
+            echo "Using provided address: $ADDRESS"
+          fi
+
+          if [ -z "$ADDRESS" ] || [ "$ADDRESS" == "null" ] || [ "$ADDRESS" == "" ]; then
+            echo "❌ No address found for ${{ inputs.contract }}"
+            exit 1
+          fi
+
+          echo "Verifying ${{ inputs.contract }} at $ADDRESS on ${{ inputs.network }} (chain $CHAIN_ID)..."
+
+          forge verify-contract $ADDRESS \
+            src/${{ inputs.contract }}.sol:${{ inputs.contract }} \
+            --chain $CHAIN_ID \
+            --etherscan-api-key $BASESCAN_API_KEY \
+            --watch
+
+          echo "✅ Verification complete!"
+          echo "🔗 Check at: https://${{ inputs.network == 'base-sepolia' && 'sepolia.' || '' }}basescan.org/address/$ADDRESS#code"

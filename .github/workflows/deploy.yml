@@ -171,40 +171,61 @@ jobs:
         if: success()
         run: |
           # Extract new implementation addresses from broadcast files after upgrades
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            CHAIN_ID=84532
+          else
+            CHAIN_ID=8453
+          fi
+
           case "${{ inputs.action }}" in
             upgrade-tapregistry)
-              NEW_IMPL=$(grep -oP 'new TapRegistry@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapRegistry.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
-              if [ ! -z "$NEW_IMPL" ]; then
-                jq --arg impl "$NEW_IMPL" '.TapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
-                echo "Updated TapRegistry implementation to: $NEW_IMPL"
+              BROADCAST_FILE="broadcast/UpgradeTapRegistry.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapRegistry") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapRegistry implementation to: $NEW_IMPL"
+                fi
               fi
               ;;
             upgrade-tapexecutor)
-              NEW_IMPL=$(grep -oP 'new TapExecutor@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapExecutor.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
-              if [ ! -z "$NEW_IMPL" ]; then
-                jq --arg impl "$NEW_IMPL" '.TapExecutor.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
-                echo "Updated TapExecutor implementation to: $NEW_IMPL"
+              BROADCAST_FILE="broadcast/UpgradeTapExecutor.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapExecutor") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapExecutor.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapExecutor implementation to: $NEW_IMPL"
+                fi
               fi
               ;;
             upgrade-multitap)
-              NEW_IMPL=$(grep -oP 'new MultiTap@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeMultiTap.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
-              if [ ! -z "$NEW_IMPL" ]; then
-                jq --arg impl "$NEW_IMPL" '.MultiTap.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
-                echo "Updated MultiTap implementation to: $NEW_IMPL"
+              BROADCAST_FILE="broadcast/UpgradeMultiTap.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "MultiTap") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.MultiTap.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated MultiTap implementation to: $NEW_IMPL"
+                fi
               fi
               ;;
             upgrade-tapfactory)
-              NEW_IMPL=$(grep -oP 'new TapFactory@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeTapFactory.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
-              if [ ! -z "$NEW_IMPL" ]; then
-                jq --arg impl "$NEW_IMPL" '.TapFactory.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
-                echo "Updated TapFactory implementation to: $NEW_IMPL"
+              BROADCAST_FILE="broadcast/UpgradeTapFactory.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapFactory") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapFactory.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapFactory implementation to: $NEW_IMPL"
+                fi
               fi
               ;;
             upgrade-basetapregistry)
-              NEW_IMPL=$(grep -oP 'new BaseTapRegistry@\K0x[a-fA-F0-9]{40}' broadcast/UpgradeBaseTapRegistry.s.sol/${{ inputs.network == 'base-sepolia' && '84532' || '8453' }}/run-latest.json | head -1)
-              if [ ! -z "$NEW_IMPL" ]; then
-                jq --arg impl "$NEW_IMPL" '.BaseTapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
-                echo "Updated BaseTapRegistry implementation to: $NEW_IMPL"
+              BROADCAST_FILE="broadcast/UpgradeBaseTapRegistry.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "BaseTapRegistry") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.BaseTapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated BaseTapRegistry implementation to: $NEW_IMPL"
+                fi
               fi
               ;;
           esac

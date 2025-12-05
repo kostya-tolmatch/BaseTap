@@ -8,7 +8,7 @@
   },
   "TapExecutor": {
     "proxy": "0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7",
-    "implementation": "0x13c816beA80cAee9753A48419d17FEd82c7Ca00b"
+    "implementation": "0xA312f167c55d668AE2369B053fcc7097DB9090a0"
   },
   "TapFactory": {
     "proxy": "",
