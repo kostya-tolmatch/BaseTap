@@ -71,6 +71,7 @@ jobs:
                 --rpc-url $RPC_URL \
                 --broadcast \
                 --slow \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-all)
@@ -85,6 +86,7 @@ jobs:
                 $TAPREGISTRY_PROXY $TAPEXECUTOR_PROXY $BASETAPREGISTRY_PROXY $MULTITAP_PROXY $TAPFACTORY_PROXY \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-tapregistry)
@@ -97,6 +99,7 @@ jobs:
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-tapexecutor)
@@ -109,6 +112,7 @@ jobs:
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-multitap)
@@ -121,6 +125,7 @@ jobs:
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-tapfactory)
@@ -133,6 +138,7 @@ jobs:
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             upgrade-basetapregistry)
@@ -145,24 +151,28 @@ jobs:
                 --sig "run(address)" $PROXY_ADDR \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             deploy-multitap)
               forge script script/DeployMultiTap.s.sol:DeployMultiTap \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             deploy-tapfactory)
               forge script script/DeployTapFactory.s.sol:DeployTapFactory \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
             deploy-basetapregistry)
               forge script script/DeployBaseTapRegistry.s.sol:DeployBaseTapRegistry \
                 --rpc-url $RPC_URL \
                 --broadcast \
+                --no-storage-caching \
                 -vvvv
               ;;
           esac
