@@ -90,22 +90,39 @@ contract DeploySystem is Script {
         string memory network = vm.envString("NETWORK");
         string memory path = string.concat(vm.projectRoot(), "/deployments/", network, ".json");
 
-        string memory json = string.concat(
+        // Build JSON in parts to avoid stack too deep
+        string memory part1 = string.concat(
             '{\n  "network": "', network,
             '",\n  "deployer": "', vm.toString(deployer),
-            '",\n  "timestamp": "', vm.toString(block.timestamp),
-            '",\n  "TapRegistry": {\n    "proxy": "', vm.toString(d.tapRegistryProxy),
-            '",\n    "implementation": "', vm.toString(d.tapRegistryImpl),
-            '"\n  },\n  "TapExecutor": {\n    "proxy": "', vm.toString(d.tapExecutorProxy),
-            '",\n    "implementation": "', vm.toString(d.tapExecutorImpl),
-            '"\n  },\n  "TapFactory": {\n    "proxy": "', vm.toString(d.tapFactoryProxy),
-            '",\n    "implementation": "', vm.toString(d.tapFactoryImpl),
-            '"\n  },\n  "MultiTap": {\n    "proxy": "', vm.toString(d.multiTapProxy),
-            '",\n    "implementation": "', vm.toString(d.multiTapImpl),
-            '"\n  },\n  "BaseTapRegistry": {\n    "proxy": "', vm.toString(d.baseTapRegistryProxy),
-            '",\n    "implementation": "', vm.toString(d.baseTapRegistryImpl),
-            '"\n  }\n}'
+            '",\n  "timestamp": "', vm.toString(block.timestamp), '"'
         );
+
+        string memory part2 = string.concat(
+            ',\n  "TapRegistry": {\n    "proxy": "', vm.toString(d.tapRegistryProxy),
+            '",\n    "implementation": "', vm.toString(d.tapRegistryImpl), '"\n  }'
+        );
+
+        string memory part3 = string.concat(
+            ',\n  "TapExecutor": {\n    "proxy": "', vm.toString(d.tapExecutorProxy),
+            '",\n    "implementation": "', vm.toString(d.tapExecutorImpl), '"\n  }'
+        );
+
+        string memory part4 = string.concat(
+            ',\n  "TapFactory": {\n    "proxy": "', vm.toString(d.tapFactoryProxy),
+            '",\n    "implementation": "', vm.toString(d.tapFactoryImpl), '"\n  }'
+        );
+
+        string memory part5 = string.concat(
+            ',\n  "MultiTap": {\n    "proxy": "', vm.toString(d.multiTapProxy),
+            '",\n    "implementation": "', vm.toString(d.multiTapImpl), '"\n  }'
+        );
+
+        string memory part6 = string.concat(
+            ',\n  "BaseTapRegistry": {\n    "proxy": "', vm.toString(d.baseTapRegistryProxy),
+            '",\n    "implementation": "', vm.toString(d.baseTapRegistryImpl), '"\n  }\n}'
+        );
+
+        string memory json = string.concat(part1, part2, part3, part4, part5, part6);
 
         vm.writeFile(path, json);
         console.log("Saved to:", path);
