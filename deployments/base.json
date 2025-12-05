@@ -1,15 +1,25 @@
 {
   "network": "base",
   "deployer": "0x458e29a3F3B9aA53f5A3497026DFA81461eD4917",
-  "timestamp": "1763828823",
+  "timestamp": "1764929959",
   "TapRegistry": {
-    "proxy": "0x68ce71187e8FEC261AF0EA9C158Ca7e02dB11df5",
-    "implementation": "0xcf9e5F47F0a5378eC959f1bedAbF93B7104d31A4"
+    "proxy": "0x3AC7335fe68ce2962B196fa8F85e82CA69BD279f",
+    "implementation": "0x2c908D998f846047Fd7eb48d2e8Be49B30418a53"
   },
   "TapExecutor": {
-    "proxy": "0xfDf6426D915116310d2197d212b0205469Ae6487",
-    "implementation": "0x957E4985B893628E3D847566821b4c0705410902"
+    "proxy": "0x52c004E74Eb53F5a0850262169f034699E0e47A7",
+    "implementation": "0xbb46F666a941c67fB2c6D6a49E4dBf261bD6603f"
   },
-  "TapFactory": "0xb4b5A27f7BEdDf00a45b7435C09054eDae4494a0",
-  "MultiTap": "0x0016E793B9C57887fA1f55937719125E4F270382"
+  "TapFactory": {
+    "proxy": "0xf8E2b106b839BE9847E8e56FE97a7B382c03D476",
+    "implementation": "0xf0368Ac94bEC5766Ff3068cf3b856b6FCC42e30E"
+  },
+  "MultiTap": {
+    "proxy": "0x142BbF4c33800Eb5FcF55b87C3eAE7f948f91531",
+    "implementation": "0x7a556C66Ece0D6676efc8a4677D19970e33294a3"
+  },
+  "BaseTapRegistry": {
+    "proxy": "0xe923aBeA06AB5292752c26c9b244C47671D7b291",
+    "implementation": "0x10d721A6e251815eF6214394F89f644D86dD9153"
+  }
 }

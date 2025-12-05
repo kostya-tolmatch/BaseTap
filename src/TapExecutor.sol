@@ -27,6 +27,7 @@ contract TapExecutor is
     function executeBatch(uint256[] calldata tapIds) external {
         for (uint256 i; i < tapIds.length; ) {
             registry.executeTap(tapIds[i]);
+            unchecked { ++i; }
         }
 
         emit BatchExecuted(tapIds, msg.sender);

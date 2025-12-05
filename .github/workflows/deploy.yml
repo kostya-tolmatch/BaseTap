@@ -1,18 +1,372 @@
 name: Deploy
+
 on:
   workflow_dispatch:
     inputs:
       network:
-        description: 'Network'
+        description: 'Network to deploy to'
         required: true
         type: choice
-        options: [base-sepolia, base]
+        options:
+          - base-sepolia
+          - base
+      action:
+        description: 'Deployment action'
+        required: true
+        type: choice
+        options:
+          - deploy-all
+          - upgrade-all
+          - upgrade-tapregistry
+          - upgrade-tapexecutor
+          - upgrade-multitap
+          - upgrade-tapfactory
+          - upgrade-basetapregistry
+          - deploy-multitap
+          - deploy-tapfactory
+          - deploy-basetapregistry
+      proxy_address:
+        description: 'Proxy address (only for single upgrades)'
+        required: false
+        type: string
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge script script/DeployTapRegistry.s.sol --broadcast
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Create deployments directory
+        run: mkdir -p deployments
+
+      - name: Deploy/Upgrade contracts
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            RPC_URL=$BASE_SEPOLIA_RPC_URL
+          else
+            RPC_URL=$BASE_RPC_URL
+          fi
+
+          case "${{ inputs.action }}" in
+            deploy-all)
+              forge script script/DeploySystem.s.sol:DeploySystem \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --slow \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-all)
+              TAPREGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              TAPEXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+              BASETAPREGISTRY_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+              TAPFACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
+
+              forge script script/UpgradeAll.s.sol:UpgradeAll \
+                --sig "run(address,address,address,address,address)" \
+                $TAPREGISTRY_PROXY $TAPEXECUTOR_PROXY $BASETAPREGISTRY_PROXY $MULTITAP_PROXY $TAPFACTORY_PROXY \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-tapregistry)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapRegistry.s.sol:UpgradeTapRegistry \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-tapexecutor)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapExecutor.s.sol:UpgradeTapExecutor \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-multitap)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeMultiTap.s.sol:UpgradeMultiTap \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-tapfactory)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeTapFactory.s.sol:UpgradeTapFactory \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            upgrade-basetapregistry)
+              PROXY_ADDR="${{ inputs.proxy_address }}"
+              if [ -z "$PROXY_ADDR" ]; then
+                PROXY_ADDR=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+              fi
+
+              forge script script/UpgradeBaseTapRegistry.s.sol:UpgradeBaseTapRegistry \
+                --sig "run(address)" $PROXY_ADDR \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            deploy-multitap)
+              forge script script/DeployMultiTap.s.sol:DeployMultiTap \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            deploy-tapfactory)
+              forge script script/DeployTapFactory.s.sol:DeployTapFactory \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+            deploy-basetapregistry)
+              forge script script/DeployBaseTapRegistry.s.sol:DeployBaseTapRegistry \
+                --rpc-url $RPC_URL \
+                --broadcast \
+                --no-storage-caching \
+                -vvvv
+              ;;
+          esac
+
+      - name: Update deployment addresses
+        if: success()
+        run: |
+          # Extract new implementation addresses from broadcast files after upgrades
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            CHAIN_ID=84532
+          else
+            CHAIN_ID=8453
+          fi
+
+          case "${{ inputs.action }}" in
+            upgrade-tapregistry)
+              BROADCAST_FILE="broadcast/UpgradeTapRegistry.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapRegistry") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapRegistry implementation to: $NEW_IMPL"
+                fi
+              fi
+              ;;
+            upgrade-tapexecutor)
+              BROADCAST_FILE="broadcast/UpgradeTapExecutor.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapExecutor") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapExecutor.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapExecutor implementation to: $NEW_IMPL"
+                fi
+              fi
+              ;;
+            upgrade-multitap)
+              BROADCAST_FILE="broadcast/UpgradeMultiTap.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "MultiTap") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.MultiTap.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated MultiTap implementation to: $NEW_IMPL"
+                fi
+              fi
+              ;;
+            upgrade-tapfactory)
+              BROADCAST_FILE="broadcast/UpgradeTapFactory.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "TapFactory") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.TapFactory.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated TapFactory implementation to: $NEW_IMPL"
+                fi
+              fi
+              ;;
+            upgrade-basetapregistry)
+              BROADCAST_FILE="broadcast/UpgradeBaseTapRegistry.s.sol/${CHAIN_ID}/run-latest.json"
+              if [ -f "$BROADCAST_FILE" ]; then
+                NEW_IMPL=$(jq -r '.transactions[] | select(.contractName == "BaseTapRegistry") | .contractAddress' "$BROADCAST_FILE" | head -1)
+                if [ ! -z "$NEW_IMPL" ] && [ "$NEW_IMPL" != "null" ]; then
+                  jq --arg impl "$NEW_IMPL" '.BaseTapRegistry.implementation = $impl' deployments/${{ inputs.network }}.json > tmp.json && mv tmp.json deployments/${{ inputs.network }}.json
+                  echo "✅ Updated BaseTapRegistry implementation to: $NEW_IMPL"
+                fi
+              fi
+              ;;
+          esac
+
+      - name: Verify contracts
+        if: success()
+        env:
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            CHAIN_ID=84532
+          else
+            CHAIN_ID=8453
+          fi
+
+          echo "Reading deployment addresses..."
+          REGISTRY_IMPL=$(jq -r '.TapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          REGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+          EXECUTOR_IMPL=$(jq -r '.TapExecutor.implementation' deployments/${{ inputs.network }}.json)
+          EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+          MULTITAP_IMPL=$(jq -r '.MultiTap.implementation' deployments/${{ inputs.network }}.json)
+          MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+          FACTORY_IMPL=$(jq -r '.TapFactory.implementation' deployments/${{ inputs.network }}.json)
+          FACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
+          BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+
+          if [ ! -z "$REGISTRY_IMPL" ] && [ "$REGISTRY_IMPL" != "null" ] && [ "$REGISTRY_IMPL" != "" ]; then
+            echo "Verifying TapRegistry implementation..."
+            forge verify-contract $REGISTRY_IMPL \
+              src/TapRegistry.sol:TapRegistry \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapRegistry verification failed or already verified"
+            sleep 2
+          fi
+
+          if [ ! -z "$EXECUTOR_IMPL" ] && [ "$EXECUTOR_IMPL" != "null" ] && [ "$EXECUTOR_IMPL" != "" ]; then
+            echo "Verifying TapExecutor implementation..."
+            forge verify-contract $EXECUTOR_IMPL \
+              src/TapExecutor.sol:TapExecutor \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapExecutor verification failed or already verified"
+            sleep 2
+          fi
+
+          if [ ! -z "$MULTITAP_IMPL" ] && [ "$MULTITAP_IMPL" != "null" ] && [ "$MULTITAP_IMPL" != "" ]; then
+            echo "Verifying MultiTap implementation..."
+            forge verify-contract $MULTITAP_IMPL \
+              src/MultiTap.sol:MultiTap \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ MultiTap verification failed or already verified"
+            sleep 2
+          fi
+
+          if [ ! -z "$FACTORY_IMPL" ] && [ "$FACTORY_IMPL" != "null" ] && [ "$FACTORY_IMPL" != "" ]; then
+            echo "Verifying TapFactory implementation..."
+            forge verify-contract $FACTORY_IMPL \
+              src/TapFactory.sol:TapFactory \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ TapFactory verification failed or already verified"
+            sleep 2
+          fi
+
+          if [ ! -z "$BASETAP_IMPL" ] && [ "$BASETAP_IMPL" != "null" ] && [ "$BASETAP_IMPL" != "" ]; then
+            echo "Verifying BaseTapRegistry implementation..."
+            forge verify-contract $BASETAP_IMPL \
+              src/BaseTapRegistry.sol:BaseTapRegistry \
+              --chain $CHAIN_ID \
+              --etherscan-api-key $BASESCAN_API_KEY \
+              --watch || echo "⚠️ BaseTapRegistry verification failed or already verified"
+          fi
+
+          echo "✅ Verification complete!"
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit deployment addresses
+        run: |
+          git add deployments/${{ inputs.network }}.json
+          git add broadcast/
+          git commit -m "chore: add ${{ inputs.network }} deployment addresses [skip ci]" || echo "No changes to commit"
+          git push origin ${{ github.ref_name }}
+
+      - name: Create deployment summary
+        run: |
+          if [ "${{ inputs.network }}" == "base-sepolia" ]; then
+            EXPLORER="https://sepolia.basescan.org"
+          else
+            EXPLORER="https://basescan.org"
+          fi
+
+          REGISTRY_IMPL=$(jq -r '.TapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          REGISTRY_PROXY=$(jq -r '.TapRegistry.proxy' deployments/${{ inputs.network }}.json)
+          EXECUTOR_IMPL=$(jq -r '.TapExecutor.implementation' deployments/${{ inputs.network }}.json)
+          EXECUTOR_PROXY=$(jq -r '.TapExecutor.proxy' deployments/${{ inputs.network }}.json)
+          MULTITAP_IMPL=$(jq -r '.MultiTap.implementation' deployments/${{ inputs.network }}.json)
+          MULTITAP_PROXY=$(jq -r '.MultiTap.proxy' deployments/${{ inputs.network }}.json)
+          FACTORY_IMPL=$(jq -r '.TapFactory.implementation' deployments/${{ inputs.network }}.json)
+          FACTORY_PROXY=$(jq -r '.TapFactory.proxy' deployments/${{ inputs.network }}.json)
+          BASETAP_IMPL=$(jq -r '.BaseTapRegistry.implementation' deployments/${{ inputs.network }}.json)
+          BASETAP_PROXY=$(jq -r '.BaseTapRegistry.proxy' deployments/${{ inputs.network }}.json)
+
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Network:** \`${{ inputs.network }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployed Contracts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Contract | Proxy | Implementation |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|----------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **TapRegistry** | [\`${REGISTRY_PROXY:0:8}...\`]($EXPLORER/address/$REGISTRY_PROXY) | [\`${REGISTRY_IMPL:0:8}...\`]($EXPLORER/address/$REGISTRY_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **TapExecutor** | [\`${EXECUTOR_PROXY:0:8}...\`]($EXPLORER/address/$EXECUTOR_PROXY) | [\`${EXECUTOR_IMPL:0:8}...\`]($EXPLORER/address/$EXECUTOR_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MultiTap** | [\`${MULTITAP_PROXY:0:8}...\`]($EXPLORER/address/$MULTITAP_PROXY) | [\`${MULTITAP_IMPL:0:8}...\`]($EXPLORER/address/$MULTITAP_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **TapFactory** | [\`${FACTORY_PROXY:0:8}...\`]($EXPLORER/address/$FACTORY_PROXY) | [\`${FACTORY_IMPL:0:8}...\`]($EXPLORER/address/$FACTORY_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **BaseTapRegistry** | [\`${BASETAP_PROXY:0:8}...\`]($EXPLORER/address/$BASETAP_PROXY) | [\`${BASETAP_IMPL:0:8}...\`]($EXPLORER/address/$BASETAP_IMPL#code) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Full Deployment Data" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat deployments/${{ inputs.network }}.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-${{ inputs.network }}
+          path: deployments/${{ inputs.network }}.json
