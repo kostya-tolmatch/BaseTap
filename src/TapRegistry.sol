@@ -179,7 +179,6 @@ contract TapRegistry is
             emit TapDeactivated(tapId);
         }
 
-        uint256 globalCap = _globalCaps[tapId];
         if (globalCap > 0 && _totalExecuted[tapId] >= globalCap) {
             tap.active = false;
             emit TapGlobalCapReached(tapId);
