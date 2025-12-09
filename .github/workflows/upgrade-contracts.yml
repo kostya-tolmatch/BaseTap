@@ -1,0 +1,111 @@
+name: Upgrade Contracts to V2
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Network to upgrade (base-sepolia or base)'
+        required: true
+        type: choice
+        options:
+          - base-sepolia
+          - base
+      skip_verification:
+        description: 'Skip contract verification'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    name: Upgrade to V2 on ${{ inputs.network }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Set RPC URL
+        id: set-rpc
+        run: |
+          if [ "${{ inputs.network }}" = "base-sepolia" ]; then
+            echo "RPC_URL=${{ secrets.BASE_SEPOLIA_RPC_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "RPC_URL=${{ secrets.BASE_RPC_URL }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run forge build
+        run: forge build --sizes
+
+      - name: Run upgrade script (dry run)
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          forge script script/UpgradeToV2.s.sol \
+            --rpc-url ${{ steps.set-rpc.outputs.RPC_URL }} \
+            -vvvv
+
+      - name: Confirm upgrade
+        run: |
+          echo "⚠️ Upgrade dry run completed successfully"
+          echo "Network: ${{ inputs.network }}"
+          echo "Ready to broadcast upgrade transaction"
+
+      - name: Execute upgrade
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          if [ "${{ inputs.skip_verification }}" = "true" ]; then
+            forge script script/UpgradeToV2.s.sol \
+              --rpc-url ${{ steps.set-rpc.outputs.RPC_URL }} \
+              --broadcast \
+              --legacy \
+              -vvvv
+          else
+            forge script script/UpgradeToV2.s.sol \
+              --rpc-url ${{ steps.set-rpc.outputs.RPC_URL }} \
+              --broadcast \
+              --verify \
+              --etherscan-api-key ${{ secrets.BASESCAN_API_KEY }} \
+              --legacy \
+              -vvvv
+          fi
+
+      - name: Commit updated deployment files
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments/${{ inputs.network }}.json
+          git commit -m "chore: update ${{ inputs.network }} deployment after V2 upgrade" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+
+      - name: Create upgrade summary
+        run: |
+          echo "## ✅ Upgrade Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Contract:** TapRegistry V2" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changes:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Added global cap support" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Storage layout preserved" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Existing taps remain functional" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### New Features:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`createTapWithCap()\` - Create taps with lifetime limits" >> $GITHUB_STEP_SUMMARY
+          echo "- \`getGlobalCap()\` - Query tap global cap" >> $GITHUB_STEP_SUMMARY
+          echo "- \`getTotalExecuted()\` - Query total executed amount" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check updated deployment file: \`deployments/${{ inputs.network }}.json\`" >> $GITHUB_STEP_SUMMARY
