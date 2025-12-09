@@ -1,4 +1,4 @@
-name: Upgrade Contracts to V2
+name: Upgrade Contracts
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   upgrade:
-    name: Upgrade to V2 on ${{ inputs.network }}
+    name: Upgrade on ${{ inputs.network }}
     runs-on: ubuntu-latest
 
     steps:
@@ -88,7 +88,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add deployments/${{ inputs.network }}.json
-          git commit -m "chore: update ${{ inputs.network }} deployment after V2 upgrade" || echo "No changes to commit"
+          git commit -m "chore: update ${{ inputs.network }} deployment after upgrade" || echo "No changes to commit"
           git push || echo "Nothing to push"
 
       - name: Create upgrade summary
@@ -96,7 +96,7 @@ jobs:
           echo "## ✅ Upgrade Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Contract:** TapRegistry V2" >> $GITHUB_STEP_SUMMARY
+          echo "**Contract:** TapRegistry" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Changes:" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Added global cap support" >> $GITHUB_STEP_SUMMARY

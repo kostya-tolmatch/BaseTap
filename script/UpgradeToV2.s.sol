@@ -62,48 +62,33 @@ contract UpgradeToV2 is Script {
 
         // Parse existing data
         address deployer = vm.parseJsonAddress(json, ".deployer");
-        address executorProxy = vm.parseJsonAddress(json, ".TapExecutor.proxy");
-        address executorImpl = vm.parseJsonAddress(json, ".TapExecutor.implementation");
-        address factoryProxy = vm.parseJsonAddress(json, ".TapFactory.proxy");
-        address factoryImpl = vm.parseJsonAddress(json, ".TapFactory.implementation");
-        address multiTapProxy = vm.parseJsonAddress(json, ".MultiTap.proxy");
-        address multiTapImpl = vm.parseJsonAddress(json, ".MultiTap.implementation");
-        address baseTapProxy = vm.parseJsonAddress(json, ".BaseTapRegistry.proxy");
-        address baseTapImpl = vm.parseJsonAddress(json, ".BaseTapRegistry.implementation");
 
-        // Build updated JSON
-        string memory part1 = string.concat(
+        // Build JSON string directly without intermediate variables
+        string memory updatedJson = string.concat(
             '{\n  "network": "', network,
             '",\n  "deployer": "', vm.toString(deployer),
-            '",\n  "timestamp": "', vm.toString(block.timestamp), '"'
+            '",\n  "timestamp": "', vm.toString(block.timestamp),
+            '",\n  "TapRegistry": {\n    "proxy": "', vm.toString(proxyAddress),
+            '",\n    "implementation": "', vm.toString(newImpl),
+            '"\n  },\n  "TapExecutor": {\n    "proxy": "',
+            vm.toString(vm.parseJsonAddress(json, ".TapExecutor.proxy")),
+            '",\n    "implementation": "',
+            vm.toString(vm.parseJsonAddress(json, ".TapExecutor.implementation")),
+            '"\n  },\n  "TapFactory": {\n    "proxy": "',
+            vm.toString(vm.parseJsonAddress(json, ".TapFactory.proxy")),
+            '",\n    "implementation": "',
+            vm.toString(vm.parseJsonAddress(json, ".TapFactory.implementation")),
+            '"\n  },\n  "MultiTap": {\n    "proxy": "',
+            vm.toString(vm.parseJsonAddress(json, ".MultiTap.proxy")),
+            '",\n    "implementation": "',
+            vm.toString(vm.parseJsonAddress(json, ".MultiTap.implementation")),
+            '"\n  },\n  "BaseTapRegistry": {\n    "proxy": "',
+            vm.toString(vm.parseJsonAddress(json, ".BaseTapRegistry.proxy")),
+            '",\n    "implementation": "',
+            vm.toString(vm.parseJsonAddress(json, ".BaseTapRegistry.implementation")),
+            '"\n  }\n}'
         );
 
-        string memory part2 = string.concat(
-            ',\n  "TapRegistry": {\n    "proxy": "', vm.toString(proxyAddress),
-            '",\n    "implementation": "', vm.toString(newImpl), '"\n  }'
-        );
-
-        string memory part3 = string.concat(
-            ',\n  "TapExecutor": {\n    "proxy": "', vm.toString(executorProxy),
-            '",\n    "implementation": "', vm.toString(executorImpl), '"\n  }'
-        );
-
-        string memory part4 = string.concat(
-            ',\n  "TapFactory": {\n    "proxy": "', vm.toString(factoryProxy),
-            '",\n    "implementation": "', vm.toString(factoryImpl), '"\n  }'
-        );
-
-        string memory part5 = string.concat(
-            ',\n  "MultiTap": {\n    "proxy": "', vm.toString(multiTapProxy),
-            '",\n    "implementation": "', vm.toString(multiTapImpl), '"\n  }'
-        );
-
-        string memory part6 = string.concat(
-            ',\n  "BaseTapRegistry": {\n    "proxy": "', vm.toString(baseTapProxy),
-            '",\n    "implementation": "', vm.toString(baseTapImpl), '"\n  }\n}'
-        );
-
-        string memory updatedJson = string.concat(part1, part2, part3, part4, part5, part6);
         vm.writeFile(path, updatedJson);
         console.log("Updated:", path);
     }
