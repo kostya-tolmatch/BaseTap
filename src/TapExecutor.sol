@@ -19,9 +19,12 @@ contract TapExecutor is
     event BatchExecuted(uint256[] tapIds, address indexed executor);
 
     function initialize(address initialOwner, address _registry) external initializer {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         registry = ITapRegistry(_registry);
+        if (initialOwner != msg.sender) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     function executeBatch(uint256[] calldata tapIds) external {

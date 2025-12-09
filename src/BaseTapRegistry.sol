@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 contract BaseTapRegistry is
     Initializable,
@@ -67,9 +67,12 @@ contract BaseTapRegistry is
     error UnauthorizedCancellation();
 
     function initialize(address initialOwner) external initializer {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
+        if (initialOwner != msg.sender) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     function createSession(

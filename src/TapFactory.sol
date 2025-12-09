@@ -13,8 +13,11 @@ contract TapFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event ExecutorDeployed(address indexed proxy, address indexed implementation);
 
     function initialize(address initialOwner) external initializer {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
+        if (initialOwner != msg.sender) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     function deployRegistry(address owner) external returns (address proxy) {

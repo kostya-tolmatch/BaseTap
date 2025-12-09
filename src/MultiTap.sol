@@ -22,8 +22,11 @@ contract MultiTap is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event SplitExecuted(uint256 indexed splitId, address indexed asset, uint256 totalAmount);
 
     function initialize(address initialOwner) external initializer {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
+        if (initialOwner != msg.sender) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     function createSplit(Split[] calldata _splits) external returns (uint256) {
