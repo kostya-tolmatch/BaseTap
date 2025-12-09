@@ -459,3 +459,169 @@ contract UpdateDeactivateTest is TapRegistryTest {
         vm.stopPrank();
     }
 }
+
+contract GlobalCapTest is TapRegistryTest {
+    function testCreateTapWithGlobalCap() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            300e18,
+            false
+        );
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.globalCap, 300e18);
+        assertEq(tap.amount, 100e18);
+    }
+
+    function testGlobalCapEnforcement() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            250e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 100e18);
+
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        vm.expectRevert("Global cap reached");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+    }
+
+    function testGlobalCapAutoDeactivation() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            200e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertTrue(tap.active);
+
+        registry.executeTap(tapId);
+        tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        vm.expectRevert("Tap not active");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+    }
+
+    function testGlobalCapWithCooldown() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            1 hours,
+            0,
+            300e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 100e18);
+
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 300e18);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        vm.stopPrank();
+    }
+
+    function testGlobalCapInvalidCreation() public {
+        vm.prank(user);
+        vm.expectRevert("Global cap must be >= amount");
+        registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            50e18,
+            false
+        );
+    }
+
+    function testGlobalCapETH() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETHWithCap(
+            recipient,
+            0.1 ether,
+            0,
+            0,
+            0.3 ether,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 0.1 ether);
+
+        registry.executeTap{value: 0.1 ether}(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 0.2 ether);
+
+        registry.executeTap{value: 0.1 ether}(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 0.3 ether);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        vm.stopPrank();
+    }
+
+    function testGlobalCapZeroAllowed() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            0,
+            false
+        );
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.globalCap, 0);
+
+        vm.startPrank(user);
+        for (uint256 i = 0; i < 10; i++) {
+            registry.executeTap(tapId);
+        }
+        vm.stopPrank();
+
+        assertEq(registry.getTotalExecuted(tapId), 1000e18);
+        assertTrue(registry.getTap(tapId).active);
+    }
+}
