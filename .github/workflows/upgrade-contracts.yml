@@ -49,7 +49,7 @@ jobs:
 
       - name: Run upgrade script (dry run)
         env:
-          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           NETWORK: ${{ inputs.network }}
         run: |
           forge script script/UpgradeToV2.s.sol \
@@ -64,7 +64,7 @@ jobs:
 
       - name: Execute upgrade
         env:
-          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           NETWORK: ${{ inputs.network }}
         run: |
           if [ "${{ inputs.skip_verification }}" = "true" ]; then
