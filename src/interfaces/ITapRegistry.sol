@@ -8,7 +8,6 @@ interface ITapRegistry {
         uint256 amount;
         uint256 cooldown;
         uint256 dailyLimit;
-        uint256 globalCap;
         bool singleUse;
         bool active;
         string label;
@@ -20,6 +19,7 @@ interface ITapRegistry {
     event TapUpdated(uint256 indexed tapId, uint256 newAmount, uint256 newCooldown);
     event TapDeactivated(uint256 indexed tapId);
     event TapGlobalCapReached(uint256 indexed tapId);
+    event TapGlobalCapSet(uint256 indexed tapId, uint256 globalCap);
 
     function createTap(
         address recipient,

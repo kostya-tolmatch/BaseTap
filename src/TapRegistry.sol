@@ -57,8 +57,11 @@ contract TapRegistry is
     mapping(uint256 => uint256) private _lastExecution;
     mapping(uint256 => uint256) private _dailyExecutions;
     mapping(uint256 => uint256) private _lastDayReset;
-    mapping(uint256 => uint256) private _totalExecuted;
     uint256 private _tapCounter;
+
+    // V2 storage: added for upgrade compatibility
+    mapping(uint256 => uint256) private _totalExecuted;
+    mapping(uint256 => uint256) private _globalCaps;
 
     function initialize(address initialOwner) external initializer {
         __Ownable_init();
@@ -105,12 +108,16 @@ contract TapRegistry is
             amount: amount,
             cooldown: cooldown,
             dailyLimit: dailyLimit,
-            globalCap: globalCap,
             singleUse: singleUse,
             active: true,
             label: "",
             description: ""
         });
+
+        if (globalCap > 0) {
+            _globalCaps[tapId] = globalCap;
+            emit TapGlobalCapSet(tapId, globalCap);
+        }
 
         tapOwners[tapId] = msg.sender;
         emit TapCreated(tapId, msg.sender, recipient);
@@ -129,8 +136,9 @@ contract TapRegistry is
             );
         }
 
-        if (tap.globalCap > 0) {
-            require(_totalExecuted[tapId] + tap.amount <= tap.globalCap, "Global cap reached");
+        uint256 globalCap = _globalCaps[tapId];
+        if (globalCap > 0) {
+            require(_totalExecuted[tapId] + tap.amount <= globalCap, "Global cap reached");
         }
 
         _lastExecution[tapId] = block.timestamp;
@@ -171,7 +179,8 @@ contract TapRegistry is
             emit TapDeactivated(tapId);
         }
 
-        if (tap.globalCap > 0 && _totalExecuted[tapId] >= tap.globalCap) {
+        uint256 globalCap = _globalCaps[tapId];
+        if (globalCap > 0 && _totalExecuted[tapId] >= globalCap) {
             tap.active = false;
             emit TapGlobalCapReached(tapId);
             emit TapDeactivated(tapId);
@@ -243,12 +252,16 @@ contract TapRegistry is
             amount: amount,
             cooldown: cooldown,
             dailyLimit: dailyLimit,
-            globalCap: globalCap,
             singleUse: singleUse,
             active: true,
             label: "",
             description: ""
         });
+
+        if (globalCap > 0) {
+            _globalCaps[tapId] = globalCap;
+            emit TapGlobalCapSet(tapId, globalCap);
+        }
 
         tapOwners[tapId] = msg.sender;
         emit TapCreated(tapId, msg.sender, recipient);
@@ -281,7 +294,6 @@ contract TapRegistry is
                 amount: amounts[i],
                 cooldown: cooldowns[i],
                 dailyLimit: 0,
-                globalCap: 0,
                 singleUse: false,
                 active: true,
                 label: "",
@@ -456,5 +468,9 @@ contract TapRegistry is
         return _totalExecuted[tapId];
     }
 
-    uint256[43] private __gap;
+    function getGlobalCap(uint256 tapId) external view returns (uint256) {
+        return _globalCaps[tapId];
+    }
+
+    uint256[41] private __gap;
 }

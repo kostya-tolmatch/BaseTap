@@ -474,7 +474,7 @@ contract GlobalCapTest is TapRegistryTest {
         );
 
         TapRegistry.TapPreset memory tap = registry.getTap(tapId);
-        assertEq(tap.globalCap, 300e18);
+        assertEq(registry.getGlobalCap(tapId), 300e18);
         assertEq(tap.amount, 100e18);
     }
 
@@ -613,7 +613,7 @@ contract GlobalCapTest is TapRegistryTest {
         );
 
         TapRegistry.TapPreset memory tap = registry.getTap(tapId);
-        assertEq(tap.globalCap, 0);
+        assertEq(registry.getGlobalCap(tapId), 0);
 
         vm.startPrank(user);
         for (uint256 i = 0; i < 10; i++) {
