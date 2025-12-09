@@ -1,5 +1,36 @@
 // SPDX-License-Identifier: MIT
 /// @title TapRegistry
+/// @notice Core registry for payment taps on Base L2
+/// @dev Upgradeable via UUPS pattern
+///
+/// TAP LIFECYCLE:
+/// 1. CREATION: Owner calls createTap/createTapWithCap to register a new tap
+///    - Immutable: recipient, asset
+///    - Configurable: amount, cooldown, dailyLimit, globalCap
+/// 2. ACTIVE: Tap can be executed by anyone meeting conditions
+///    - Cooldown: minimum time between executions
+///    - Daily limit: max executions per 24h period
+///    - Global cap: lifetime total amount limit (0 = unlimited)
+/// 3. EXECUTION: executeTap transfers funds from caller to recipient
+///    - Enforces all limits and cooldowns
+///    - Tracks execution history and total executed amount
+///    - Auto-deactivates on singleUse or global cap reached
+/// 4. UPDATES: Owner can updateTap to modify amount/cooldown
+///    - Cannot change recipient (safety invariant)
+///    - Cannot change asset (safety invariant)
+/// 5. DEACTIVATION: Owner can deactivateTap or tap auto-deactivates
+///    - Manual: owner calls deactivateTap
+///    - Automatic: singleUse after first execution
+///    - Automatic: globalCap reached
+/// 6. OWNERSHIP: Owner can transfer tap ownership to another address
+///
+/// SAFETY INVARIANTS:
+/// - Recipient address cannot be changed after creation
+/// - Asset address cannot be changed after creation
+/// - Global cap can only decrease execution count, never increase
+/// - Only owner can update/deactivate tap
+/// - Deactivated taps cannot be reactivated
+///
 pragma solidity 0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
