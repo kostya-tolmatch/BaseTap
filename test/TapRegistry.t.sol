@@ -828,6 +828,8 @@ contract NativeETHTest is TapRegistryTest {
         );
 
         vm.startPrank(user);
+
+        // Day 1: 2 executions (daily limit = 2)
         registry.executeTap{value: 0.1 ether}(tapId);
 
         vm.expectRevert("Cooldown period active");
@@ -840,12 +842,13 @@ contract NativeETHTest is TapRegistryTest {
         vm.expectRevert("Daily limit reached");
         registry.executeTap{value: 0.1 ether}(tapId);
 
-        vm.warp(block.timestamp + 1 days);
-        for (uint256 i = 0; i < 8; i++) {
+        // Days 2-5: 2 executions each day until global cap
+        for (uint256 day = 0; day < 4; day++) {
+            vm.warp(block.timestamp + 1 days);
+
             registry.executeTap{value: 0.1 ether}(tapId);
-            if (i < 7) {
-                vm.warp(block.timestamp + 30 minutes);
-            }
+            vm.warp(block.timestamp + 30 minutes);
+            registry.executeTap{value: 0.1 ether}(tapId);
         }
 
         TapRegistry.TapPreset memory tap = registry.getTap(tapId);
