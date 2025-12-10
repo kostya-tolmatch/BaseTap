@@ -541,21 +541,24 @@ contract GlobalCapTest is TapRegistryTest {
             false
         );
 
-        vm.startPrank(user);
+        vm.prank(user);
         registry.executeTap(tapId);
         assertEq(registry.getTotalExecuted(tapId), 100e18);
 
-        vm.warp(block.timestamp + 1 hours);
+        vm.warp(block.timestamp + 1 hours + 1);
+
+        vm.prank(user);
         registry.executeTap(tapId);
         assertEq(registry.getTotalExecuted(tapId), 200e18);
 
-        vm.warp(block.timestamp + 1 hours);
+        vm.warp(block.timestamp + 1 hours + 1);
+
+        vm.prank(user);
         registry.executeTap(tapId);
         assertEq(registry.getTotalExecuted(tapId), 300e18);
 
         TapRegistry.TapPreset memory tap = registry.getTap(tapId);
         assertFalse(tap.active);
-        vm.stopPrank();
     }
 
     function testGlobalCapInvalidCreation() public {
