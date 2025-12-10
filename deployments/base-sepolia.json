@@ -1,10 +1,10 @@
 {
   "network": "base-sepolia",
   "deployer": "0x458e29a3F3B9aA53f5A3497026DFA81461eD4917",
-  "timestamp": "1764923132",
+  "timestamp": "1765361030",
   "TapRegistry": {
     "proxy": "0xd37B6c90376DF894403A63226F887cc8BD2bDea8",
-    "implementation": "0x3dE56386578771bC4fFD952d4a96e6bd15CB7497"
+    "implementation": "0xf07447C2b825ca25BeED053Ec590343C2550933A"
   },
   "TapExecutor": {
     "proxy": "0x8bB61C4734E6736c80F9ACC3c400bef5c3FD52d0",
