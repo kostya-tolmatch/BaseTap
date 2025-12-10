@@ -569,6 +569,8 @@ contract GlobalCapTest is TapRegistryTest {
             registry.executeTap(tapId);
         }
 
+        token.mint(user, 10000e18);
+
         registry.updateTap(tapId, 1000e18, 0);
         TapRegistry.TapPreset memory tap = registry.getTap(tapId);
         assertEq(tap.amount, 1000e18);
@@ -834,6 +836,7 @@ contract NativeETHTest is TapRegistryTest {
         vm.warp(block.timestamp + 30 minutes);
         registry.executeTap{value: 0.1 ether}(tapId);
 
+        vm.warp(block.timestamp + 30 minutes);
         vm.expectRevert("Daily limit reached");
         registry.executeTap{value: 0.1 ether}(tapId);
 
@@ -976,6 +979,7 @@ contract ComplexEdgeCaseTest is TapRegistryTest {
 
         assertEq(registry.getTotalExecuted(tapId), 300e18);
 
+        vm.warp(block.timestamp + 1 hours);
         vm.expectRevert("Daily limit reached");
         registry.executeTap(tapId);
 
