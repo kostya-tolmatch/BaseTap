@@ -478,6 +478,106 @@ contract GlobalCapTest is TapRegistryTest {
         assertEq(tap.amount, 100e18);
     }
 
+    function testUpdateTapAmountExceedsRemainingCap() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            300e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        vm.stopPrank();
+
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        vm.prank(user);
+        vm.expectRevert("Amount exceeds remaining global cap");
+        registry.updateTap(tapId, 150e18, 0);
+    }
+
+    function testUpdateTapAmountWithinRemainingCap() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            300e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 100e18);
+
+        registry.updateTap(tapId, 200e18, 0);
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.amount, 200e18);
+
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 300e18);
+
+        tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        vm.stopPrank();
+    }
+
+    function testUpdateTapReduceAmount() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            500e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 100e18);
+
+        registry.updateTap(tapId, 50e18, 0);
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.amount, 50e18);
+
+        for (uint256 i = 0; i < 8; i++) {
+            registry.executeTap(tapId);
+        }
+        assertEq(registry.getTotalExecuted(tapId), 500e18);
+
+        tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        vm.stopPrank();
+    }
+
+    function testUpdateTapNoGlobalCapAllowsAnyAmount() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 100e18, 0, 0, false);
+
+        vm.startPrank(user);
+        for (uint256 i = 0; i < 5; i++) {
+            registry.executeTap(tapId);
+        }
+
+        registry.updateTap(tapId, 1000e18, 0);
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.amount, 1000e18);
+
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 1500e18);
+        vm.stopPrank();
+    }
+
     function testGlobalCapEnforcement() public {
         vm.prank(user);
         uint256 tapId = registry.createTapWithCap(
@@ -626,5 +726,355 @@ contract GlobalCapTest is TapRegistryTest {
 
         assertEq(registry.getTotalExecuted(tapId), 1000e18);
         assertTrue(registry.getTap(tapId).active);
+    }
+}
+
+contract NativeETHTest is TapRegistryTest {
+    function testCreateETHTap() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 0, false);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.recipient, recipient);
+        assertEq(tap.asset, address(0));
+        assertEq(tap.amount, 0.1 ether);
+        assertTrue(tap.active);
+    }
+
+    function testExecuteETHTap() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 0, false);
+
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.prank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        assertEq(recipient.balance, recipientBalanceBefore + 0.1 ether);
+    }
+
+    function testExecuteETHTapWithCooldown() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 1 hours, 0, false);
+
+        vm.startPrank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.expectRevert("Cooldown period active");
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        vm.stopPrank();
+
+        assertEq(registry.getTotalExecuted(tapId), 0.2 ether);
+    }
+
+    function testExecuteETHTapWithDailyLimit() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 3, false);
+
+        vm.startPrank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.expectRevert("Daily limit reached");
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.warp(block.timestamp + 1 days);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        vm.stopPrank();
+
+        assertEq(registry.getTotalExecuted(tapId), 0.4 ether);
+    }
+
+    function testExecuteETHTapWithGlobalCap() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETHWithCap(recipient, 0.1 ether, 0, 0, 0.3 ether, false);
+
+        vm.startPrank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        registry.executeTap{value: 0.1 ether}(tapId);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 0.3 ether);
+        vm.stopPrank();
+    }
+
+    function testExecuteETHTapWithAllLimits() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETHWithCap(
+            recipient,
+            0.1 ether,
+            30 minutes,
+            2,
+            1 ether,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.expectRevert("Cooldown period active");
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.warp(block.timestamp + 30 minutes);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.expectRevert("Daily limit reached");
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        vm.warp(block.timestamp + 1 days);
+        for (uint256 i = 0; i < 8; i++) {
+            registry.executeTap{value: 0.1 ether}(tapId);
+            if (i < 7) {
+                vm.warp(block.timestamp + 30 minutes);
+            }
+        }
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 1 ether);
+        vm.stopPrank();
+    }
+
+    function testETHTapInsufficientValue() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 0, false);
+
+        vm.prank(user);
+        vm.expectRevert("Insufficient ETH");
+        registry.executeTap{value: 0.05 ether}(tapId);
+    }
+
+    function testETHTapRefundsExcess() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 0, false);
+
+        uint256 userBalanceBefore = user.balance;
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.prank(user);
+        registry.executeTap{value: 0.2 ether}(tapId);
+
+        assertEq(recipient.balance, recipientBalanceBefore + 0.1 ether);
+        assertEq(user.balance, userBalanceBefore - 0.1 ether);
+    }
+
+    function testETHTapSingleUse() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapETH(recipient, 0.1 ether, 0, 0, true);
+
+        vm.prank(user);
+        registry.executeTap{value: 0.1 ether}(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+
+        vm.prank(user);
+        vm.expectRevert("Tap not active");
+        registry.executeTap{value: 0.1 ether}(tapId);
+    }
+}
+
+contract ComplexEdgeCaseTest is TapRegistryTest {
+    function testGlobalCapReachedBeforeDailyLimitReset() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            5,
+            300e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 300e18);
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.expectRevert("Tap not active");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+    }
+
+    function testDailyLimitResetWithGlobalCapRemaining() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            2,
+            1000e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        vm.expectRevert("Daily limit reached");
+        registry.executeTap(tapId);
+
+        vm.warp(block.timestamp + 1 days);
+
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 300e18);
+        assertTrue(registry.getTap(tapId).active);
+        vm.stopPrank();
+    }
+
+    function testCooldownWithDailyLimitAndGlobalCap() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            1 hours,
+            3,
+            600e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+
+        assertEq(registry.getTotalExecuted(tapId), 300e18);
+
+        vm.expectRevert("Daily limit reached");
+        registry.executeTap(tapId);
+
+        vm.warp(block.timestamp + 1 days);
+
+        registry.executeTap(tapId);
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+        vm.warp(block.timestamp + 1 hours);
+        registry.executeTap(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 600e18);
+        vm.stopPrank();
+    }
+
+    function testUpdateAmountAfterPartialExecution() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            500e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        assertEq(registry.getTotalExecuted(tapId), 200e18);
+
+        registry.updateTap(tapId, 75e18, 0);
+
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+        assertEq(registry.getTotalExecuted(tapId), 500e18);
+        vm.stopPrank();
+    }
+
+    function testDeactivateTapWithPendingCooldown() public {
+        vm.prank(user);
+        uint256 tapId = registry.createTap(recipient, address(token), 100e18, 1 hours, 0, false);
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+
+        assertFalse(registry.canExecute(tapId));
+
+        registry.deactivateTap(tapId);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertFalse(tap.active);
+
+        vm.warp(block.timestamp + 1 hours);
+
+        vm.expectRevert("Tap not active");
+        registry.executeTap(tapId);
+        vm.stopPrank();
+    }
+
+    function testTransferOwnershipMidExecution() public {
+        address newOwner = address(999);
+
+        vm.prank(user);
+        uint256 tapId = registry.createTapWithCap(
+            recipient,
+            address(token),
+            100e18,
+            0,
+            0,
+            500e18,
+            false
+        );
+
+        vm.startPrank(user);
+        registry.executeTap(tapId);
+        registry.executeTap(tapId);
+
+        registry.transferTapOwnership(tapId, newOwner);
+        vm.stopPrank();
+
+        assertEq(registry.tapOwners(tapId), newOwner);
+
+        vm.prank(user);
+        vm.expectRevert("Not tap owner");
+        registry.updateTap(tapId, 150e18, 0);
+
+        vm.prank(newOwner);
+        registry.updateTap(tapId, 150e18, 0);
+
+        TapRegistry.TapPreset memory tap = registry.getTap(tapId);
+        assertEq(tap.amount, 150e18);
     }
 }
