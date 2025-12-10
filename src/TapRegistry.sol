@@ -197,6 +197,14 @@ contract TapRegistry is
         require(_taps[tapId].active, "Tap not active");
 
         if (newAmount > 0) {
+            uint256 globalCap = _globalCaps[tapId];
+            if (globalCap > 0) {
+                uint256 totalExecuted = _totalExecuted[tapId];
+                require(
+                    totalExecuted + newAmount <= globalCap,
+                    "Amount exceeds remaining global cap"
+                );
+            }
             _taps[tapId].amount = newAmount;
         }
 
