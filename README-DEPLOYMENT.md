@@ -2,140 +2,163 @@
 
 ## Architecture
 
-### Contracts with UUPS Proxy (Upgradeable)
-- **TapRegistry** - Stores taps, owners, execution history
-- **TapExecutor** - Batch executor for multiple taps
-- **BaseTapRegistry** - Payment session registry
+### All Contracts Use UUPS Proxy Pattern (Upgradeable)
 
-### Contracts without Proxy (Stateless)
-- **TapFactory** - Factory for deploying TapRegistry/TapExecutor proxies
+All BaseTap contracts are deployed with **ERC1967 UUPS proxies** for upgradeability:
+
+- **TapRegistry** - Core registry for payment taps
+- **TapExecutor** - Batch executor for multiple taps
+- **TapFactory** - Factory for creating tap configurations
 - **MultiTap** - Payment splitting utility
+- **BaseTapRegistry** - Base L2-specific registry features
+
+Each contract has:
+- **Proxy address** - Persistent address for user interactions
+- **Implementation address** - Upgradeable logic contract
 
 ## Deployment Scripts
 
 ### Full System Deployment
+
+Deploy all 5 contracts with proxies:
+
 ```bash
-# Deploy entire system to testnet
+# Deploy to Base Sepolia testnet
 NETWORK=base-sepolia forge script script/DeploySystem.s.sol:DeploySystem \
-  --rpc-url $BASE_SEPOLIA_RPC \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
   --broadcast --verify
 
-# Deploy to mainnet
+# Deploy to Base mainnet
 NETWORK=base forge script script/DeploySystem.s.sol:DeploySystem \
-  --rpc-url $BASE_RPC \
+  --rpc-url $BASE_RPC_URL \
   --broadcast --verify
 ```
 
 ### Individual Contract Deployment
 
-#### With Proxy (UUPS)
+Deploy single contracts:
+
 ```bash
 # TapRegistry
-forge script script/DeployTapRegistry.s.sol:DeployTapRegistry --rpc-url $RPC --broadcast
-
-# BaseTapRegistry
-forge script script/DeployBaseTapRegistry.s.sol:DeployBaseTapRegistry --rpc-url $RPC --broadcast
-```
-
-#### Without Proxy
-```bash
-# MultiTap
-forge script script/DeployMultiTap.s.sol:DeployMultiTap --rpc-url $RPC --broadcast
+forge script script/DeployTapRegistry.s.sol:DeployTapRegistry \
+  --rpc-url $RPC_URL --broadcast
 
 # TapFactory
-forge script script/DeployTapFactory.s.sol:DeployTapFactory --rpc-url $RPC --broadcast
-```
+forge script script/DeployTapFactory.s.sol:DeployTapFactory \
+  --rpc-url $RPC_URL --broadcast
 
-### Upgrades
+# MultiTap
+forge script script/DeployMultiTap.s.sol:DeployMultiTap \
+  --rpc-url $RPC_URL --broadcast
 
-#### Upgrade Single Proxy
-```bash
-# TapRegistry
-forge script script/UpgradeTapRegistry.s.sol:UpgradeTapRegistry \
-  --sig "run(address)" <PROXY_ADDRESS> \
-  --rpc-url $RPC --broadcast
-
-# TapExecutor
-forge script script/UpgradeTapExecutor.s.sol:UpgradeTapExecutor \
-  --sig "run(address)" <PROXY_ADDRESS> \
-  --rpc-url $RPC --broadcast
-```
-
-#### Upgrade All Proxies
-```bash
-forge script script/UpgradeAll.s.sol:UpgradeAll \
-  --sig "run(address,address,address)" \
-  <TAPREGISTRY_PROXY> <TAPEXECUTOR_PROXY> <BASETAPREGISTRY_PROXY> \
-  --rpc-url $RPC --broadcast
+# BaseTapRegistry
+forge script script/DeployBaseTapRegistry.s.sol:DeployBaseTapRegistry \
+  --rpc-url $RPC_URL --broadcast
 ```
 
 ## GitHub Actions Deployment
 
-### Setup Secrets
+### Setup Required Secrets
+
 Add these secrets to your GitHub repository:
-- `DEPLOYER_PRIVATE_KEY` - Deployer wallet private key
+
+- `PRIVATE_KEY` - Deployer wallet private key
 - `BASE_RPC_URL` - Base mainnet RPC URL
 - `BASE_SEPOLIA_RPC_URL` - Base Sepolia testnet RPC URL
-- `BASESCAN_API_KEY` - Basescan API key for verification
+- `BASESCAN_API_KEY` - Basescan API key for contract verification
 
-### Trigger Deployment
+### Deploy via GitHub Actions
 
-1. Go to **Actions** tab in GitHub
-2. Select **Deploy Contracts** workflow
+1. Go to **Actions** tab in GitHub repository
+2. Select **Deploy** workflow
 3. Click **Run workflow**
-4. Choose:
-   - **Network**: `base-sepolia` or `base`
+4. Configure deployment:
+   - **Network**: `base-sepolia` (testnet) or `base` (mainnet)
    - **Action**:
-     - `deploy-all` - Deploy entire system
-     - `upgrade-all` - Upgrade all proxies
-     - `deploy-multitap` - Deploy new MultiTap
-     - `deploy-tapfactory` - Deploy new TapFactory
-     - `upgrade-tapregistry` - Upgrade TapRegistry
-     - etc.
-   - **Proxy address**: (only for upgrades)
+     - `deploy-all` - Deploy entire system (5 contracts)
+     - `deploy-multitap` - Deploy MultiTap only
+     - `deploy-tapfactory` - Deploy TapFactory only
+     - `deploy-basetapregistry` - Deploy BaseTapRegistry only
+
+5. Click **Run workflow** to start deployment
+
+### What Happens During Deployment
+
+1. ✅ Build all contracts
+2. ✅ Deploy implementations
+3. ✅ Deploy proxies with initialization
+4. ✅ Verify contracts on Basescan
+5. ✅ Save addresses to `deployments/<network>.json`
+6. ✅ Commit deployment file to repository
+7. ✅ Generate deployment summary with Basescan links
 
 ## Current Deployments
 
-### Base Sepolia
-```
-TapRegistry Proxy:       0xaD1c6Feb90a0167A926341BA74d9700d958D5DAF
-TapExecutor Proxy:       0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7
-TapFactory:              0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74
-MultiTap:                0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE
-BaseTapRegistry:         (not deployed)
-```
+### Base Sepolia (Testnet)
 
-### Base Mainnet
-```
-TapRegistry Proxy:       0x68ce71187e8FEC261AF0EA9C158Ca7e02dB11df5
-TapExecutor Proxy:       0xfDf6426D915116310d2197d212b0205469Ae6487
-TapFactory:              0xb4b5A27f7BEdDf00a45b7435C09054eDae4494a0
-MultiTap:                0x0016E793B9C57887fA1f55937719125E4F270382
-BaseTapRegistry:         (not deployed)
-```
+Deployed: December 11, 2025
 
-## Next Steps
+| Contract | Proxy Address | Implementation |
+|----------|---------------|----------------|
+| **TapRegistry** | [`0x358E5138a036d8ED587Ae36aFA2F1FFBAED350c7`](https://sepolia.basescan.org/address/0x358E5138a036d8ED587Ae36aFA2F1FFBAED350c7) | [`0xD6f934ea9fa33f00BfFC7786679C6381bbe04770`](https://sepolia.basescan.org/address/0xD6f934ea9fa33f00BfFC7786679C6381bbe04770#code) |
+| **TapExecutor** | [`0x47B9C073E6A88aA2C85A45b48a099c156fe91eDC`](https://sepolia.basescan.org/address/0x47B9C073E6A88aA2C85A45b48a099c156fe91eDC) | [`0x946f113db3a14190FE9fF8583Fb20Da06DF368eb`](https://sepolia.basescan.org/address/0x946f113db3a14190FE9fF8583Fb20Da06DF368eb#code) |
+| **TapFactory** | [`0x852Ab1575567D2f9d593D33A1f0583113afD7Bc1`](https://sepolia.basescan.org/address/0x852Ab1575567D2f9d593D33A1f0583113afD7Bc1) | [`0x32595b4Ee43D836A91F50cD412c52bF9990C28d3`](https://sepolia.basescan.org/address/0x32595b4Ee43D836A91F50cD412c52bF9990C28d3#code) |
+| **MultiTap** | [`0x6c04841B18cDf8CBfa7F9c6b700c09B13Aa7e463`](https://sepolia.basescan.org/address/0x6c04841B18cDf8CBfa7F9c6b700c09B13Aa7e463) | [`0x78421913Bfc07c13bC13ffB0A40B584063b4DE06`](https://sepolia.basescan.org/address/0x78421913Bfc07c13bC13ffB0A40B584063b4DE06#code) |
+| **BaseTapRegistry** | [`0xa666C1947a671e771464458D5389b9D004E1D1a1`](https://sepolia.basescan.org/address/0xa666C1947a671e771464458D5389b9D004E1D1a1) | [`0xc2D8b3Fc885F8Bd649adf5b7709374C52A6e0f7b`](https://sepolia.basescan.org/address/0xc2D8b3Fc885F8Bd649adf5b7709374C52A6e0f7b#code) |
 
-### Required Upgrades
-1. **TapRegistry** - Critical fixes for batchCreateTaps and cooldown
-2. **TapExecutor** - Gas optimization
-3. **MultiTap** - Redeploy with splitCounter fix
+**Deployer**: `0x458e29a3F3B9aA53f5A3497026DFA81461eD4917`
 
-### Missing Deployments
-- **BaseTapRegistry** - Not deployed yet
+### Base Mainnet (Production)
 
-## Verification
+Deployed: December 11, 2025
 
-After deployment, verify contracts on Basescan:
+| Contract | Proxy Address | Implementation |
+|----------|---------------|----------------|
+| **TapRegistry** | [`0xD2fBbeF9a80884e500f7AE4edc4696B1B326908D`](https://basescan.org/address/0xD2fBbeF9a80884e500f7AE4edc4696B1B326908D) | [`0xb1A4AA05B5786c4Aad1ac3423185783965c7A456`](https://basescan.org/address/0xb1A4AA05B5786c4Aad1ac3423185783965c7A456#code) |
+| **TapExecutor** | [`0x8ecA32822E8a984274bA931c130F0C5fB70BBd41`](https://basescan.org/address/0x8ecA32822E8a984274bA931c130F0C5fB70BBd41) | [`0xC5e87ecE32E0500ca21015b68BD53B92C06C1b81`](https://basescan.org/address/0xC5e87ecE32E0500ca21015b68BD53B92C06C1b81#code) |
+| **TapFactory** | [`0x13c816beA80cAee9753A48419d17FEd82c7Ca00b`](https://basescan.org/address/0x13c816beA80cAee9753A48419d17FEd82c7Ca00b) | [`0xaD1c6Feb90a0167A926341BA74d9700d958D5DAF`](https://basescan.org/address/0xaD1c6Feb90a0167A926341BA74d9700d958D5DAF#code) |
+| **MultiTap** | [`0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74`](https://basescan.org/address/0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74) | [`0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7`](https://basescan.org/address/0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7#code) |
+| **BaseTapRegistry** | [`0xf86652A0da022426A886c966f397D64135Ce1608`](https://basescan.org/address/0xf86652A0da022426A886c966f397D64135Ce1608) | [`0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE`](https://basescan.org/address/0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE#code) |
+
+**Deployer**: `0x458e29a3F3B9aA53f5A3497026DFA81461eD4917`
+
+## Contract Verification
+
+Contracts are automatically verified during GitHub Actions deployment. To manually verify:
+
 ```bash
-forge verify-contract <ADDRESS> <CONTRACT> \
+# Verify implementation contract
+forge verify-contract <IMPLEMENTATION_ADDRESS> <CONTRACT_PATH> \
   --chain-id <CHAIN_ID> \
+  --etherscan-api-key $BASESCAN_API_KEY
+
+# Example for TapRegistry on Base Sepolia
+forge verify-contract 0xD6f934ea9fa33f00BfFC7786679C6381bbe04770 \
+  src/TapRegistry.sol:TapRegistry \
+  --chain-id 84532 \
   --etherscan-api-key $BASESCAN_API_KEY
 ```
 
-## Security Notes
+**Chain IDs:**
+- Base Sepolia: `84532`
+- Base Mainnet: `8453`
 
-- All proxy contracts use UUPS pattern with `onlyOwner` authorization
-- Emergency pause functionality available on TapRegistry
-- Emergency withdrawal function for stuck funds
-- ReentrancyGuard on all state-changing functions
+## Integration
+
+For integration examples and API documentation, see:
+- [INTEGRATION.md](./INTEGRATION.md) - Complete integration guide
+- [README.md](./README.md) - Project overview
+
+## Security Features
+
+- **UUPS Pattern**: Upgradeable via `upgradeToAndCall()` (owner only)
+- **Access Control**: `OwnableUpgradeable` for admin functions
+- **Pausable**: Emergency pause mechanism on TapRegistry
+- **ReentrancyGuard**: Protection on all state-changing functions
+- **Initialization**: One-time initialization via `initializer` modifier
+
+## Support
+
+For issues or questions:
+- GitHub Issues: https://github.com/kostya-tolmatch/BaseTap/issues
+- Documentation: [INTEGRATION.md](./INTEGRATION.md)

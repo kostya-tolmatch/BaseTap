@@ -1,25 +1,25 @@
 {
   "network": "base-sepolia",
   "deployer": "0x458e29a3F3B9aA53f5A3497026DFA81461eD4917",
-  "timestamp": "1764923132",
+  "timestamp": "1765453772",
   "TapRegistry": {
-    "proxy": "0xd37B6c90376DF894403A63226F887cc8BD2bDea8",
-    "implementation": "0x3dE56386578771bC4fFD952d4a96e6bd15CB7497"
+    "proxy": "0x358E5138a036d8ED587Ae36aFA2F1FFBAED350c7",
+    "implementation": "0xD6f934ea9fa33f00BfFC7786679C6381bbe04770"
   },
   "TapExecutor": {
-    "proxy": "0x8bB61C4734E6736c80F9ACC3c400bef5c3FD52d0",
-    "implementation": "0x0734F19DfEA2473D1cAb43E4068B3c57d7864b60"
+    "proxy": "0x47B9C073E6A88aA2C85A45b48a099c156fe91eDC",
+    "implementation": "0x946f113db3a14190FE9fF8583Fb20Da06DF368eb"
   },
   "TapFactory": {
-    "proxy": "0xbc42aF946605dF8e8F01925BfF64F95dc7d24Cb8",
-    "implementation": "0xD068FB0D034DE2a8d88a896c0B5fD57CDb9c0EcC"
+    "proxy": "0x852Ab1575567D2f9d593D33A1f0583113afD7Bc1",
+    "implementation": "0x32595b4Ee43D836A91F50cD412c52bF9990C28d3"
   },
   "MultiTap": {
-    "proxy": "0x9F4e4EbE006b7C78F0df517744b77819901185D2",
-    "implementation": "0x1Dd5544E1822CA2991CefB10F7c1Ff3A9d6Af3b2"
+    "proxy": "0x6c04841B18cDf8CBfa7F9c6b700c09B13Aa7e463",
+    "implementation": "0x78421913Bfc07c13bC13ffB0A40B584063b4DE06"
   },
   "BaseTapRegistry": {
-    "proxy": "0xF65a4110e136a062e09630eDA02448c8A19b58A6",
-    "implementation": "0xbB218A80FA139e3e40806D36CE1CdB9B4AD0e2EE"
+    "proxy": "0xa666C1947a671e771464458D5389b9D004E1D1a1",
+    "implementation": "0xc2D8b3Fc885F8Bd649adf5b7709374C52A6e0f7b"
   }
 }

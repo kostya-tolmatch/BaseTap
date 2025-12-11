@@ -16,8 +16,10 @@ interface ITapRegistry {
 
     event TapCreated(uint256 indexed tapId, address indexed owner, address recipient);
     event TapExecuted(uint256 indexed tapId, address indexed executor, uint256 amount);
-    event TapUpdated(uint256 indexed tapId);
+    event TapUpdated(uint256 indexed tapId, uint256 newAmount, uint256 newCooldown);
     event TapDeactivated(uint256 indexed tapId);
+    event TapGlobalCapReached(uint256 indexed tapId);
+    event TapGlobalCapSet(uint256 indexed tapId, uint256 globalCap);
 
     function createTap(
         address recipient,

@@ -1,12 +1,43 @@
 // SPDX-License-Identifier: MIT
 /// @title TapRegistry
+/// @notice Core registry for payment taps on Base L2
+/// @dev Upgradeable via UUPS pattern
+///
+/// TAP LIFECYCLE:
+/// 1. CREATION: Owner calls createTap/createTapWithCap to register a new tap
+///    - Immutable: recipient, asset
+///    - Configurable: amount, cooldown, dailyLimit, globalCap
+/// 2. ACTIVE: Tap can be executed by anyone meeting conditions
+///    - Cooldown: minimum time between executions
+///    - Daily limit: max executions per 24h period
+///    - Global cap: lifetime total amount limit (0 = unlimited)
+/// 3. EXECUTION: executeTap transfers funds from caller to recipient
+///    - Enforces all limits and cooldowns
+///    - Tracks execution history and total executed amount
+///    - Auto-deactivates on singleUse or global cap reached
+/// 4. UPDATES: Owner can updateTap to modify amount/cooldown
+///    - Cannot change recipient (safety invariant)
+///    - Cannot change asset (safety invariant)
+/// 5. DEACTIVATION: Owner can deactivateTap or tap auto-deactivates
+///    - Manual: owner calls deactivateTap
+///    - Automatic: singleUse after first execution
+///    - Automatic: globalCap reached
+/// 6. OWNERSHIP: Owner can transfer tap ownership to another address
+///
+/// SAFETY INVARIANTS:
+/// - Recipient address cannot be changed after creation
+/// - Asset address cannot be changed after creation
+/// - Global cap can only decrease execution count, never increase
+/// - Only owner can update/deactivate tap
+/// - Deactivated taps cannot be reactivated
+///
 pragma solidity 0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ITapRegistry} from "./interfaces/ITapRegistry.sol";
@@ -28,11 +59,18 @@ contract TapRegistry is
     mapping(uint256 => uint256) private _lastDayReset;
     uint256 private _tapCounter;
 
+    // V2 storage: added for upgrade compatibility
+    mapping(uint256 => uint256) private _totalExecuted;
+    mapping(uint256 => uint256) private _globalCaps;
+
     function initialize(address initialOwner) external initializer {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
+        if (initialOwner != msg.sender) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     function createTap(
@@ -43,9 +81,24 @@ contract TapRegistry is
         uint256 dailyLimit,
         bool singleUse
     ) external returns (uint256) {
+        return createTapWithCap(recipient, asset, amount, cooldown, dailyLimit, 0, singleUse);
+    }
+
+    function createTapWithCap(
+        address recipient,
+        address asset,
+        uint256 amount,
+        uint256 cooldown,
+        uint256 dailyLimit,
+        uint256 globalCap,
+        bool singleUse
+    ) public returns (uint256) {
         require(recipient != address(0), "Invalid recipient");
         require(asset != address(0), "Invalid asset");
         require(amount > 0, "Invalid amount");
+        if (globalCap > 0) {
+            require(globalCap >= amount, "Global cap must be >= amount");
+        }
 
         uint256 tapId = ++_tapCounter;
 
@@ -60,6 +113,11 @@ contract TapRegistry is
             label: "",
             description: ""
         });
+
+        if (globalCap > 0) {
+            _globalCaps[tapId] = globalCap;
+            emit TapGlobalCapSet(tapId, globalCap);
+        }
 
         tapOwners[tapId] = msg.sender;
         emit TapCreated(tapId, msg.sender, recipient);
@@ -76,6 +134,11 @@ contract TapRegistry is
                 block.timestamp >= _lastExecution[tapId] + tap.cooldown,
                 "Cooldown period active"
             );
+        }
+
+        uint256 globalCap = _globalCaps[tapId];
+        if (globalCap > 0) {
+            require(_totalExecuted[tapId] + tap.amount <= globalCap, "Global cap reached");
         }
 
         _lastExecution[tapId] = block.timestamp;
@@ -102,6 +165,8 @@ contract TapRegistry is
         IERC20(tap.asset).safeTransferFrom(msg.sender, tap.recipient, tap.amount);
         }
 
+        _totalExecuted[tapId] += tap.amount;
+
         emit TapExecuted(tapId, msg.sender, tap.amount);
         _executionHistory[tapId].push(ExecutionHistory({
             timestamp: block.timestamp,
@@ -111,6 +176,12 @@ contract TapRegistry is
 
         if (tap.singleUse) {
             tap.active = false;
+            emit TapDeactivated(tapId);
+        }
+
+        if (globalCap > 0 && _totalExecuted[tapId] >= globalCap) {
+            tap.active = false;
+            emit TapGlobalCapReached(tapId);
             emit TapDeactivated(tapId);
         }
     }
@@ -126,12 +197,20 @@ contract TapRegistry is
         require(_taps[tapId].active, "Tap not active");
 
         if (newAmount > 0) {
+            uint256 globalCap = _globalCaps[tapId];
+            if (globalCap > 0) {
+                uint256 totalExecuted = _totalExecuted[tapId];
+                require(
+                    totalExecuted + newAmount <= globalCap,
+                    "Amount exceeds remaining global cap"
+                );
+            }
             _taps[tapId].amount = newAmount;
         }
 
         _taps[tapId].cooldown = newCooldown;
 
-        emit TapUpdated(tapId);
+        emit TapUpdated(tapId, newAmount, newCooldown);
     }
 
     function deactivateTap(uint256 tapId) external {
@@ -152,8 +231,22 @@ contract TapRegistry is
         uint256 dailyLimit,
         bool singleUse
     ) external returns (uint256) {
+        return createTapETHWithCap(recipient, amount, cooldown, dailyLimit, 0, singleUse);
+    }
+
+    function createTapETHWithCap(
+        address recipient,
+        uint256 amount,
+        uint256 cooldown,
+        uint256 dailyLimit,
+        uint256 globalCap,
+        bool singleUse
+    ) public returns (uint256) {
         require(recipient != address(0), "Invalid recipient");
         require(amount > 0, "Invalid amount");
+        if (globalCap > 0) {
+            require(globalCap >= amount, "Global cap must be >= amount");
+        }
 
         uint256 tapId;
         unchecked {
@@ -171,6 +264,11 @@ contract TapRegistry is
             label: "",
             description: ""
         });
+
+        if (globalCap > 0) {
+            _globalCaps[tapId] = globalCap;
+            emit TapGlobalCapSet(tapId, globalCap);
+        }
 
         tapOwners[tapId] = msg.sender;
         emit TapCreated(tapId, msg.sender, recipient);
@@ -373,5 +471,13 @@ contract TapRegistry is
         emit EmergencyWithdraw(token, amount, to);
     }
 
-    uint256[44] private __gap;
+    function getTotalExecuted(uint256 tapId) external view returns (uint256) {
+        return _totalExecuted[tapId];
+    }
+
+    function getGlobalCap(uint256 tapId) external view returns (uint256) {
+        return _globalCaps[tapId];
+    }
+
+    uint256[41] private __gap;
 }
