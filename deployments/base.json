@@ -1,0 +1,25 @@
+{
+  "network": "base",
+  "deployer": "0x458e29a3F3B9aA53f5A3497026DFA81461eD4917",
+  "timestamp": "1765454223",
+  "TapRegistry": {
+    "proxy": "0xD2fBbeF9a80884e500f7AE4edc4696B1B326908D",
+    "implementation": "0xb1A4AA05B5786c4Aad1ac3423185783965c7A456"
+  },
+  "TapExecutor": {
+    "proxy": "0x8ecA32822E8a984274bA931c130F0C5fB70BBd41",
+    "implementation": "0xC5e87ecE32E0500ca21015b68BD53B92C06C1b81"
+  },
+  "TapFactory": {
+    "proxy": "0x13c816beA80cAee9753A48419d17FEd82c7Ca00b",
+    "implementation": "0xaD1c6Feb90a0167A926341BA74d9700d958D5DAF"
+  },
+  "MultiTap": {
+    "proxy": "0xe0dE3673b6055D94815C3d1C1ee02BE9b46fDC74",
+    "implementation": "0x9879EbA0200e9340A6CfD6fB42664e1C4F409Eb7"
+  },
+  "BaseTapRegistry": {
+    "proxy": "0xf86652A0da022426A886c966f397D64135Ce1608",
+    "implementation": "0x2c6517f3dB11b2606faf10f651f8EA2EfD58C0cE"
+  }
+}
