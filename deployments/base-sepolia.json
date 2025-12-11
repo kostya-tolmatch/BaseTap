@@ -1,0 +1,25 @@
+{
+  "network": "base-sepolia",
+  "deployer": "0x458e29a3F3B9aA53f5A3497026DFA81461eD4917",
+  "timestamp": "1765453772",
+  "TapRegistry": {
+    "proxy": "0x358E5138a036d8ED587Ae36aFA2F1FFBAED350c7",
+    "implementation": "0xD6f934ea9fa33f00BfFC7786679C6381bbe04770"
+  },
+  "TapExecutor": {
+    "proxy": "0x47B9C073E6A88aA2C85A45b48a099c156fe91eDC",
+    "implementation": "0x946f113db3a14190FE9fF8583Fb20Da06DF368eb"
+  },
+  "TapFactory": {
+    "proxy": "0x852Ab1575567D2f9d593D33A1f0583113afD7Bc1",
+    "implementation": "0x32595b4Ee43D836A91F50cD412c52bF9990C28d3"
+  },
+  "MultiTap": {
+    "proxy": "0x6c04841B18cDf8CBfa7F9c6b700c09B13Aa7e463",
+    "implementation": "0x78421913Bfc07c13bC13ffB0A40B584063b4DE06"
+  },
+  "BaseTapRegistry": {
+    "proxy": "0xa666C1947a671e771464458D5389b9D004E1D1a1",
+    "implementation": "0xc2D8b3Fc885F8Bd649adf5b7709374C52A6e0f7b"
+  }
+}
